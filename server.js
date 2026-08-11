@@ -56,30 +56,16 @@ function saveDB(data) {
     fs.writeFileSync(databasePath, JSON.stringify(data, null, 2), 'utf8');
 }
 
-/*
- * SMTP
- * ضع هذه المتغيرات في Railway Variables:
- *
- * SMTP_HOST
- * SMTP_PORT
- * SMTP_USER
- * SMTP_PASS
- * MAIL_FROM
- *
- * مثال Brevo:
- * SMTP_HOST=smtp-relay.brevo.com
- * SMTP_PORT=587
- * SMTP_USER=your-brevo-login
- * SMTP_PASS=your-brevo-smtp-key
- * MAIL_FROM="AbuSaud Store <your-verified-email@example.com>"
- */
 const mailTransporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT || 587),
-    secure: String(process.env.SMTP_PORT) === '465',
+    port: Number(process.env.SMTP_PORT || 465),
+    secure: Number(process.env.SMTP_PORT || 465) === 465,
     auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS
+    },
+    tls: {
+        rejectUnauthorized: false
     }
 });
 
@@ -254,7 +240,10 @@ app.post('/register', async (req, res) => {
     };
 
     try {
-        await sendVerificationEmail(email, username, code);
+        await Promise.race([
+            sendVerificationEmail(email, username, code),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('SMTP_TIMEOUT')), 10000))
+        ]);
 
         res.render('verify', {
             error: null,
@@ -266,7 +255,7 @@ app.post('/register', async (req, res) => {
         delete req.session.pendingRegistration;
 
         res.render('register', {
-            error: 'تعذر إرسال كود التحقق. تأكد من إعدادات البريد في Railway.',
+            error: error.message === 'SMTP_TIMEOUT' ? 'استغرق الاتصال بخدمة البريد وقتاً طويلاً. تأكد من إعداداتك.' : 'تعذر إرسال كود التحقق. تأكد من إعدادات البريد في Railway.',
             embed: embedData
         });
     }
@@ -369,7 +358,10 @@ app.post('/resend-verification', async (req, res) => {
     pending.lastSentAt = Date.now();
 
     try {
-        await sendVerificationEmail(pending.email, pending.username, code);
+        await Promise.race([
+            sendVerificationEmail(pending.email, pending.username, code),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('SMTP_TIMEOUT')), 10000))
+        ]);
 
         res.render('verify', {
             error: 'تم إرسال كود جديد إلى بريدك الإلكتروني.',
