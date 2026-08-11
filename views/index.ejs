@@ -1,84 +1,1990 @@
+```html
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>AbuSaud Store | Dashboard</title>
-<meta property="og:type" content="website">
-<meta property="og:title" content="AbuSaud Store | لوحة تحكم البوتات">
-<meta property="og:description" content="لوحة تحكم متكاملة لإدارة وتشغيل البوتات بسهولة.">
-<meta property="og:image" content="https://abusaud-dashboard-production.up.railway.app/images/banner.png">
-<meta property="og:url" content="https://abusaud-dashboard-production.up.railway.app/">
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap');
-*{box-sizing:border-box;margin:0;padding:0}body{font-family:Cairo,Arial,sans-serif;background:#070b14;color:#f8fafc;min-height:100vh}
-body:before{content:"";position:fixed;inset:0;background:radial-gradient(circle at 80% 0,#1d4ed81c,transparent 30%),radial-gradient(circle at 10% 80%,#7c3aed12,transparent 30%);pointer-events:none}
-.layout{display:flex;min-height:100vh}.side{width:260px;background:#0b101bdf;border-left:1px solid #1e293b;padding:24px 16px;position:fixed;right:0;top:0;bottom:0;z-index:5;backdrop-filter:blur(16px)}
-.brand{display:flex;align-items:center;gap:12px;padding:8px 10px 28px;border-bottom:1px solid #1e293b;margin-bottom:22px}.brand img{width:45px;height:45px;border-radius:14px;object-fit:cover;border:1px solid #334155}.brand b{font-size:17px}.brand small{display:block;color:#64748b;font-size:10px;margin-top:2px}
-.nav{display:grid;gap:7px}.nav a{color:#94a3b8;text-decoration:none;padding:12px 14px;border-radius:11px;display:block;font-size:13px;font-weight:700;cursor:pointer;transition:.2s}.nav a:hover,.nav a.active{background:#172033;color:#fff;box-shadow:inset -3px 0 #3b82f6}
-.user{position:absolute;bottom:18px;left:16px;right:16px;background:#111827;border:1px solid #1f2937;border-radius:14px;padding:12px}.user strong{display:block;font-size:12px}.user span{font-size:10px;color:#64748b}.logout{display:block;text-align:center;background:#ef444415;color:#f87171;text-decoration:none;padding:8px;border-radius:8px;margin-top:10px;font-size:11px;font-weight:700}
-.main{margin-right:260px;width:calc(100% - 260px);padding:28px 34px 50px}.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:25px}.eyebrow{color:#60a5fa;font-size:11px;font-weight:800}.title{font-size:27px;font-weight:800;margin-top:3px}.date{color:#64748b;font-size:11px}
-.hero{min-height:250px;border:1px solid #263246;border-radius:22px;overflow:hidden;position:relative;background:url('/images/banner.png') center/cover;box-shadow:0 20px 70px #0006}.hero:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#070b14f5 0%,#070b1480 55%,#070b1410)}.hero-content{position:relative;z-index:1;padding:45px;max-width:620px}.hero h2{font-size:30px;line-height:1.35}.hero p{color:#b6c2d4;font-size:13px;margin:10px 0 20px}.pill{display:inline-flex;gap:7px;align-items:center;background:#2563eb20;border:1px solid #3b82f655;color:#93c5fd;padding:7px 11px;border-radius:99px;font-size:11px;font-weight:700}
-.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:20px 0}.stat{background:#0d1422;border:1px solid #1e293b;border-radius:16px;padding:18px}.stat small{color:#64748b;font-size:10px}.stat strong{display:block;font-size:25px;margin-top:5px}.stat i{font-style:normal;color:#22c55e;font-size:10px}
-.section{display:none}.section.active{display:block}.section-head{display:flex;align-items:center;justify-content:space-between;margin:26px 0 13px}.section-head h3{font-size:17px}.muted{color:#64748b;font-size:11px}
-.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}.card{background:#0d1422;border:1px solid #1e293b;border-radius:16px;padding:18px;transition:.2s}.card:hover{transform:translateY(-2px);border-color:#334155}.bot-top{display:flex;align-items:center;gap:12px}.bot-icon{width:45px;height:45px;border-radius:13px;background:#172033;display:grid;place-items:center;font-size:22px}.bot-name{font-weight:800;font-size:14px}.tag{font-size:9px;color:#60a5fa;background:#2563eb15;padding:3px 7px;border-radius:6px}.status{margin:17px 0;padding:9px 11px;background:#080d17;border-radius:9px;color:#94a3b8;font-size:11px}.online{color:#4ade80}.offline{color:#f87171}.actions{display:flex;gap:7px}.btn{border:0;border-radius:8px;padding:9px 10px;font-family:inherit;font-size:10px;font-weight:800;cursor:pointer;flex:1}.start{background:#22c55e;color:#06120a}.stop{background:#ef4444;color:#fff}.restart{background:#eab308;color:#171000}.store{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}.price{font-size:22px;font-weight:800;margin:15px 0}.price span{font-size:10px;color:#64748b}.admin-box{background:#0d1422;border:1px solid #1e293b;border-radius:16px;padding:20px;margin-bottom:15px}.admin-box input,.admin-box select{width:100%;background:#080d17;border:1px solid #273449;color:#fff;padding:11px;border-radius:9px;margin:6px 0 13px;font-family:inherit}.blue{background:#2563eb;color:white;width:100%}.table{width:100%;border-collapse:collapse}.table th,.table td{padding:12px;text-align:right;border-bottom:1px solid #1e293b;font-size:11px}.table th{color:#60a5fa}
-@media(max-width:900px){.side{width:220px}.main{margin-right:220px;width:calc(100% - 220px);padding:20px}.grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:650px){.side{position:relative;width:100%;height:auto}.layout{display:block}.user{position:static;margin-top:25px}.main{margin:0;width:100%;padding:16px}.hero-content{padding:28px}.hero h2{font-size:23px}.grid{grid-template-columns:1fr 1fr}.top{display:block}.date{margin-top:5px}}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AbuSaud Store | Dashboard</title>
+
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="AbuSaud Store | لوحة تحكم البوتات">
+    <meta property="og:description" content="لوحة تحكم متكاملة لإدارة وتشغيل البوتات بسهولة.">
+    <meta property="og:image" content="https://abusaud-dashboard-production.up.railway.app/images/banner.png">
+    <meta property="og:url" content="https://abusaud-dashboard-production.up.railway.app/">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #050811;
+            --bg-soft: #080d18;
+            --panel: rgba(12, 18, 31, .72);
+            --panel-solid: #0c121f;
+            --panel-light: rgba(20, 29, 47, .72);
+
+            --border: rgba(148, 163, 184, .12);
+            --border-light: rgba(96, 165, 250, .22);
+
+            --blue: #3b82f6;
+            --blue-light: #60a5fa;
+            --cyan: #38bdf8;
+            --purple: #8b5cf6;
+
+            --text: #f8fafc;
+            --muted: #7f8da3;
+            --muted-light: #a9b5c8;
+
+            --green: #22c55e;
+            --red: #ef4444;
+            --yellow: #eab308;
+
+            --shadow: 0 25px 80px rgba(0, 0, 0, .35);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: "Cairo", Arial, sans-serif;
+            background:
+                radial-gradient(circle at 50% -10%, rgba(37, 99, 235, .14), transparent 32%),
+                radial-gradient(circle at 100% 50%, rgba(124, 58, 237, .08), transparent 28%),
+                radial-gradient(circle at 0% 80%, rgba(14, 165, 233, .06), transparent 25%),
+                var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* =========================
+           BACKGROUND
+        ========================= */
+
+        .background {
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: -5;
+        }
+
+        .grid-bg {
+            position: absolute;
+            inset: 0;
+            opacity: .22;
+
+            background-image:
+                linear-gradient(rgba(96, 165, 250, .035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(96, 165, 250, .035) 1px, transparent 1px);
+
+            background-size: 55px 55px;
+
+            mask-image: linear-gradient(
+                to bottom,
+                black,
+                transparent 85%
+            );
+        }
+
+        .glow {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: .09;
+            animation: floatGlow 12s ease-in-out infinite;
+        }
+
+        .glow.one {
+            background: #2563eb;
+            top: -350px;
+            right: -200px;
+        }
+
+        .glow.two {
+            background: #7c3aed;
+            bottom: -350px;
+            left: -250px;
+            animation-delay: -5s;
+        }
+
+        .glow.three {
+            background: #0ea5e9;
+            top: 35%;
+            left: 40%;
+            width: 350px;
+            height: 350px;
+            opacity: .045;
+            animation-delay: -8s;
+        }
+
+        @keyframes floatGlow {
+            0%, 100% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            50% {
+                transform: translate(35px, -25px) scale(1.08);
+            }
+        }
+
+        .stars {
+            position: absolute;
+            inset: 0;
+        }
+
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            border-radius: 50%;
+            background: #fff;
+            opacity: .35;
+            animation: twinkle 3s ease-in-out infinite;
+        }
+
+        .star:nth-child(1) { top: 8%; left: 12%; animation-delay: .2s; }
+        .star:nth-child(2) { top: 15%; left: 31%; animation-delay: 1.2s; }
+        .star:nth-child(3) { top: 23%; left: 72%; animation-delay: .7s; }
+        .star:nth-child(4) { top: 34%; left: 88%; animation-delay: 2s; }
+        .star:nth-child(5) { top: 46%; left: 17%; animation-delay: 1.5s; }
+        .star:nth-child(6) { top: 55%; left: 44%; animation-delay: .3s; }
+        .star:nth-child(7) { top: 62%; left: 79%; animation-delay: 1.8s; }
+        .star:nth-child(8) { top: 74%; left: 8%; animation-delay: .9s; }
+        .star:nth-child(9) { top: 81%; left: 58%; animation-delay: 2.3s; }
+        .star:nth-child(10) { top: 91%; left: 91%; animation-delay: 1.1s; }
+        .star:nth-child(11) { top: 12%; left: 94%; animation-delay: .5s; }
+        .star:nth-child(12) { top: 41%; left: 63%; animation-delay: 1.7s; }
+        .star:nth-child(13) { top: 68%; left: 35%; animation-delay: 2.5s; }
+        .star:nth-child(14) { top: 88%; left: 23%; animation-delay: .8s; }
+        .star:nth-child(15) { top: 29%; left: 4%; animation-delay: 2.1s; }
+        .star:nth-child(16) { top: 52%; left: 96%; animation-delay: 1.4s; }
+        .star:nth-child(17) { top: 7%; left: 53%; animation-delay: .4s; }
+        .star:nth-child(18) { top: 77%; left: 73%; animation-delay: 2.2s; }
+
+        @keyframes twinkle {
+            0%, 100% {
+                opacity: .15;
+                transform: scale(.8);
+            }
+
+            50% {
+                opacity: .9;
+                transform: scale(1.8);
+                box-shadow: 0 0 10px rgba(147, 197, 253, .8);
+            }
+        }
+
+        /* =========================
+           LAYOUT
+        ========================= */
+
+        .layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* =========================
+           SIDEBAR
+        ========================= */
+
+        .side {
+            width: 270px;
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 20;
+
+            padding: 22px 15px;
+
+            background: rgba(7, 12, 22, .72);
+            border-left: 1px solid var(--border);
+
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+
+            box-shadow: -20px 0 70px rgba(0, 0, 0, .12);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+
+            padding: 9px 10px 25px;
+            margin-bottom: 22px;
+
+            border-bottom: 1px solid var(--border);
+        }
+
+        .brand img {
+            width: 46px;
+            height: 46px;
+            object-fit: cover;
+            border-radius: 14px;
+
+            border: 1px solid rgba(96, 165, 250, .25);
+
+            box-shadow:
+                0 0 0 5px rgba(59, 130, 246, .035),
+                0 8px 25px rgba(0, 0, 0, .25);
+        }
+
+        .brand b {
+            display: block;
+            font-size: 15px;
+            font-weight: 900;
+            letter-spacing: .2px;
+        }
+
+        .brand small {
+            display: block;
+            color: #56647a;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 1.2px;
+            margin-top: 2px;
+        }
+
+        .nav {
+            display: grid;
+            gap: 6px;
+        }
+
+        .nav a {
+            position: relative;
+
+            display: flex;
+            align-items: center;
+            gap: 10px;
+
+            color: #8390a4;
+            text-decoration: none;
+
+            padding: 12px 14px;
+            border-radius: 12px;
+
+            font-size: 12px;
+            font-weight: 800;
+
+            cursor: pointer;
+            overflow: hidden;
+
+            transition:
+                background .25s ease,
+                color .25s ease,
+                transform .25s ease,
+                box-shadow .25s ease;
+        }
+
+        .nav a::before {
+            content: "";
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: currentColor;
+            opacity: .55;
+        }
+
+        .nav a::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+
+            background:
+                linear-gradient(
+                    90deg,
+                    transparent,
+                    rgba(96, 165, 250, .07),
+                    transparent
+                );
+
+            transform: translateX(100%);
+            transition: transform .5s ease;
+        }
+
+        .nav a:hover::after {
+            transform: translateX(-100%);
+        }
+
+        .nav a:hover {
+            color: #dbeafe;
+            background: rgba(30, 41, 59, .65);
+            transform: translateX(-2px);
+        }
+
+        .nav a.active {
+            color: #fff;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    rgba(37, 99, 235, .18),
+                    rgba(30, 41, 59, .55)
+                );
+
+            border: 1px solid rgba(59, 130, 246, .13);
+
+            box-shadow:
+                inset -3px 0 var(--blue),
+                0 8px 25px rgba(0, 0, 0, .12);
+        }
+
+        .nav a.active::before {
+            background: var(--blue-light);
+            box-shadow: 0 0 10px var(--blue);
+            opacity: 1;
+        }
+
+        /* =========================
+           USER
+        ========================= */
+
+        .user {
+            position: absolute;
+            left: 15px;
+            right: 15px;
+            bottom: 18px;
+
+            padding: 13px;
+
+            background: rgba(12, 18, 31, .78);
+            border: 1px solid var(--border);
+
+            border-radius: 14px;
+
+            backdrop-filter: blur(14px);
+
+            box-shadow: 0 15px 35px rgba(0, 0, 0, .18);
+        }
+
+        .user strong {
+            display: block;
+            font-size: 12px;
+            font-weight: 800;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .user span {
+            display: block;
+            color: #58667a;
+            font-size: 9px;
+            margin-top: 2px;
+        }
+
+        .logout {
+            display: block;
+
+            text-align: center;
+            text-decoration: none;
+
+            color: #f87171;
+
+            background: rgba(239, 68, 68, .06);
+            border: 1px solid rgba(239, 68, 68, .08);
+
+            padding: 8px;
+            border-radius: 9px;
+
+            margin-top: 11px;
+
+            font-size: 10px;
+            font-weight: 800;
+
+            transition: .25s ease;
+        }
+
+        .logout:hover {
+            background: rgba(239, 68, 68, .12);
+            border-color: rgba(239, 68, 68, .2);
+            transform: translateY(-1px);
+        }
+
+        /* =========================
+           MAIN
+        ========================= */
+
+        .main {
+            margin-right: 270px;
+            width: calc(100% - 270px);
+
+            padding: 30px 38px 60px;
+        }
+
+        .top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            margin-bottom: 25px;
+
+            animation: fadeDown .7s ease both;
+        }
+
+        .eyebrow {
+            color: var(--blue-light);
+            font-size: 9px;
+            font-weight: 900;
+            letter-spacing: 1.8px;
+        }
+
+        .title {
+            font-size: 27px;
+            line-height: 1.35;
+            font-weight: 900;
+            margin-top: 3px;
+        }
+
+        .date {
+            color: #64748b;
+            font-size: 10px;
+        }
+
+        /* =========================
+           HERO
+        ========================= */
+
+        .hero {
+            min-height: 275px;
+
+            position: relative;
+            overflow: hidden;
+
+            border-radius: 24px;
+
+            border: 1px solid rgba(96, 165, 250, .16);
+
+            background:
+                linear-gradient(
+                    135deg,
+                    rgba(6, 11, 20, .98),
+                    rgba(10, 18, 32, .55)
+                ),
+                url('/images/banner.png') center / cover;
+
+            box-shadow:
+                0 30px 90px rgba(0, 0, 0, .4),
+                inset 0 1px rgba(255, 255, 255, .03);
+
+            animation: fadeUp .7s .05s ease both;
+        }
+
+        .hero::before {
+            content: "";
+
+            position: absolute;
+            inset: 0;
+
+            background:
+                radial-gradient(
+                    circle at 75% 45%,
+                    rgba(37, 99, 235, .28),
+                    transparent 35%
+                ),
+                radial-gradient(
+                    circle at 95% 10%,
+                    rgba(124, 58, 237, .2),
+                    transparent 30%
+                );
+
+            pointer-events: none;
+        }
+
+        .hero::after {
+            content: "";
+
+            position: absolute;
+            inset: 0;
+
+            background:
+                linear-gradient(
+                    90deg,
+                    rgba(5, 8, 17, .98) 0%,
+                    rgba(5, 8, 17, .88) 36%,
+                    rgba(5, 8, 17, .35) 75%,
+                    rgba(5, 8, 17, .05) 100%
+                );
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+
+            max-width: 650px;
+
+            padding: 48px;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+
+            color: #93c5fd;
+
+            background: rgba(37, 99, 235, .09);
+            border: 1px solid rgba(59, 130, 246, .2);
+
+            padding: 7px 11px;
+            border-radius: 999px;
+
+            font-size: 9px;
+            font-weight: 800;
+
+            box-shadow: 0 0 25px rgba(37, 99, 235, .05);
+        }
+
+        .pill::before {
+            content: "";
+            width: 6px;
+            height: 6px;
+
+            border-radius: 50%;
+            background: #4ade80;
+
+            box-shadow:
+                0 0 0 4px rgba(74, 222, 128, .08),
+                0 0 12px rgba(74, 222, 128, .7);
+
+            animation: pulse 2s infinite;
+        }
+
+        .hero h2 {
+            font-size: 32px;
+            line-height: 1.4;
+            font-weight: 900;
+
+            margin-top: 17px;
+
+            letter-spacing: -.7px;
+        }
+
+        .hero p {
+            color: #a9b5c8;
+
+            max-width: 520px;
+
+            font-size: 12px;
+            line-height: 2;
+
+            margin: 9px 0 0;
+        }
+
+        /* =========================
+           STATS
+        ========================= */
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+
+            margin: 20px 0;
+        }
+
+        .stat {
+            position: relative;
+            overflow: hidden;
+
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(15, 23, 42, .78),
+                    rgba(9, 14, 25, .78)
+                );
+
+            border: 1px solid var(--border);
+            border-radius: 17px;
+
+            padding: 19px;
+
+            transition:
+                transform .3s ease,
+                border-color .3s ease,
+                box-shadow .3s ease;
+
+            animation: fadeUp .7s ease both;
+        }
+
+        .stat:nth-child(1) { animation-delay: .1s; }
+        .stat:nth-child(2) { animation-delay: .15s; }
+        .stat:nth-child(3) { animation-delay: .2s; }
+        .stat:nth-child(4) { animation-delay: .25s; }
+
+        .stat::before {
+            content: "";
+
+            position: absolute;
+
+            width: 100px;
+            height: 100px;
+
+            top: -55px;
+            left: -45px;
+
+            background: var(--blue);
+            opacity: .06;
+
+            border-radius: 50%;
+            filter: blur(25px);
+        }
+
+        .stat:hover {
+            transform: translateY(-4px);
+
+            border-color: rgba(96, 165, 250, .2);
+
+            box-shadow:
+                0 15px 45px rgba(0, 0, 0, .25),
+                0 0 30px rgba(37, 99, 235, .04);
+        }
+
+        .stat small {
+            color: #69778c;
+            font-size: 9px;
+            font-weight: 700;
+        }
+
+        .stat strong {
+            display: block;
+
+            font-size: 25px;
+            font-weight: 900;
+
+            margin-top: 4px;
+        }
+
+        .stat i {
+            display: inline-block;
+
+            font-style: normal;
+
+            color: #4ade80;
+
+            font-size: 9px;
+            font-weight: 700;
+
+            margin-top: 2px;
+        }
+
+        /* =========================
+           SECTIONS
+        ========================= */
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+
+            animation: sectionIn .4s ease both;
+        }
+
+        @keyframes sectionIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            margin: 27px 0 14px;
+        }
+
+        .section-head h3 {
+            font-size: 16px;
+            font-weight: 900;
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 10px;
+        }
+
+        /* =========================
+           CARDS
+        ========================= */
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 14px;
+        }
+
+        .card {
+            position: relative;
+            overflow: hidden;
+
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(14, 21, 35, .8),
+                    rgba(9, 14, 24, .78)
+                );
+
+            border: 1px solid var(--border);
+            border-radius: 17px;
+
+            padding: 18px;
+
+            backdrop-filter: blur(14px);
+
+            transition:
+                transform .3s ease,
+                border-color .3s ease,
+                box-shadow .3s ease;
+        }
+
+        .card::before {
+            content: "";
+
+            position: absolute;
+
+            top: 0;
+            right: -80px;
+
+            width: 150px;
+            height: 100px;
+
+            background: radial-gradient(
+                circle,
+                rgba(59, 130, 246, .08),
+                transparent 70%
+            );
+
+            pointer-events: none;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+
+            border-color: rgba(96, 165, 250, .2);
+
+            box-shadow:
+                0 18px 45px rgba(0, 0, 0, .25),
+                0 0 30px rgba(59, 130, 246, .035);
+        }
+
+        .bot-top {
+            position: relative;
+            z-index: 1;
+
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .bot-icon {
+            width: 45px;
+            height: 45px;
+
+            display: grid;
+            place-items: center;
+
+            border-radius: 13px;
+
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(37, 99, 235, .14),
+                    rgba(30, 41, 59, .5)
+                );
+
+            border: 1px solid rgba(96, 165, 250, .12);
+
+            color: #93c5fd;
+            font-size: 18px;
+
+            box-shadow:
+                inset 0 1px rgba(255, 255, 255, .03),
+                0 8px 25px rgba(0, 0, 0, .18);
+        }
+
+        .bot-name {
+            font-size: 13px;
+            font-weight: 900;
+
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .tag {
+            display: inline-block;
+
+            color: #60a5fa;
+
+            background: rgba(37, 99, 235, .07);
+            border: 1px solid rgba(59, 130, 246, .1);
+
+            padding: 3px 7px;
+            border-radius: 6px;
+
+            font-size: 8px;
+            font-weight: 800;
+
+            margin-top: 4px;
+        }
+
+        .status {
+            margin: 17px 0 12px;
+
+            padding: 10px 11px;
+
+            background: rgba(3, 7, 15, .55);
+            border: 1px solid rgba(148, 163, 184, .06);
+
+            border-radius: 9px;
+
+            color: #7d8a9d;
+            font-size: 10px;
+            line-height: 2;
+        }
+
+        .online {
+            color: #4ade80;
+            text-shadow: 0 0 10px rgba(74, 222, 128, .25);
+        }
+
+        .offline {
+            color: #f87171;
+        }
+
+        /* =========================
+           BUTTONS
+        ========================= */
+
+        .actions {
+            display: flex;
+            gap: 7px;
+        }
+
+        .btn {
+            position: relative;
+            overflow: hidden;
+
+            border: 0;
+            border-radius: 9px;
+
+            padding: 9px 10px;
+
+            font-family: inherit;
+            font-size: 9px;
+            font-weight: 900;
+
+            cursor: pointer;
+
+            flex: 1;
+
+            transition:
+                transform .2s ease,
+                filter .2s ease,
+                box-shadow .2s ease;
+        }
+
+        .btn::after {
+            content: "";
+
+            position: absolute;
+            inset: 0;
+
+            background: linear-gradient(
+                110deg,
+                transparent 25%,
+                rgba(255, 255, 255, .15) 50%,
+                transparent 75%
+            );
+
+            transform: translateX(-120%);
+            transition: transform .55s ease;
+        }
+
+        .btn:hover::after {
+            transform: translateX(120%);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.08);
+        }
+
+        .btn:active {
+            transform: translateY(0) scale(.98);
+        }
+
+        .start {
+            background: rgba(34, 197, 94, .9);
+            color: #031108;
+
+            box-shadow: 0 7px 20px rgba(34, 197, 94, .08);
+        }
+
+        .stop {
+            background: rgba(239, 68, 68, .9);
+            color: #fff;
+
+            box-shadow: 0 7px 20px rgba(239, 68, 68, .08);
+        }
+
+        .restart {
+            background: rgba(234, 179, 8, .9);
+            color: #171000;
+
+            box-shadow: 0 7px 20px rgba(234, 179, 8, .08);
+        }
+
+        .blue {
+            background: linear-gradient(
+                135deg,
+                #2563eb,
+                #3b82f6
+            );
+
+            color: #fff;
+
+            width: 100%;
+
+            box-shadow:
+                0 10px 25px rgba(37, 99, 235, .16);
+        }
+
+        /* =========================
+           STORE
+        ========================= */
+
+        .store {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 14px;
+        }
+
+        .price {
+            font-size: 21px;
+            font-weight: 900;
+
+            margin: 15px 0;
+        }
+
+        .price span {
+            color: #657287;
+            font-size: 9px;
+            font-weight: 700;
+        }
+
+        /* =========================
+           ADMIN
+        ========================= */
+
+        .admin-box {
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(14, 21, 35, .8),
+                    rgba(9, 14, 24, .78)
+                );
+
+            border: 1px solid var(--border);
+            border-radius: 17px;
+
+            padding: 20px;
+            margin-bottom: 15px;
+
+            box-shadow: 0 15px 45px rgba(0, 0, 0, .12);
+        }
+
+        .admin-box h3 {
+            font-size: 14px;
+            font-weight: 900;
+        }
+
+        .admin-box input,
+        .admin-box select {
+            width: 100%;
+
+            background: rgba(3, 7, 15, .7);
+
+            border: 1px solid rgba(148, 163, 184, .1);
+
+            color: #fff;
+
+            padding: 11px 12px;
+
+            border-radius: 9px;
+
+            margin: 6px 0 13px;
+
+            font-family: inherit;
+            font-size: 10px;
+
+            outline: none;
+
+            transition: .25s ease;
+        }
+
+        .admin-box input:focus,
+        .admin-box select:focus {
+            border-color: rgba(59, 130, 246, .45);
+
+            box-shadow:
+                0 0 0 3px rgba(59, 130, 246, .06),
+                0 0 25px rgba(59, 130, 246, .04);
+        }
+
+        .admin-box input::placeholder {
+            color: #526075;
+        }
+
+        /* =========================
+           TABLE
+        ========================= */
+
+        .table-wrap {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table th,
+        .table td {
+            padding: 13px 12px;
+
+            text-align: right;
+
+            border-bottom: 1px solid rgba(148, 163, 184, .08);
+
+            font-size: 10px;
+        }
+
+        .table th {
+            color: #60a5fa;
+            font-weight: 800;
+        }
+
+        .table td {
+            color: #a4afbf;
+        }
+
+        .table tbody tr {
+            transition: background .2s ease;
+        }
+
+        .table tbody tr:hover {
+            background: rgba(59, 130, 246, .025);
+        }
+
+        /* =========================
+           SCROLLBAR
+        ========================= */
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #050811;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 99px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #334155;
+        }
+
+        /* =========================
+           ANIMATIONS
+        ========================= */
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(18px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(.75);
+                opacity: .65;
+            }
+        }
+
+        /* =========================
+           MOBILE
+        ========================= */
+
+        @media (max-width: 1100px) {
+            .side {
+                width: 230px;
+            }
+
+            .main {
+                margin-right: 230px;
+                width: calc(100% - 230px);
+                padding: 25px;
+            }
+
+            .grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 760px) {
+            .layout {
+                display: block;
+            }
+
+            .side {
+                position: relative;
+
+                width: 100%;
+                height: auto;
+
+                padding: 14px;
+
+                border-left: 0;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .brand {
+                padding-bottom: 15px;
+                margin-bottom: 12px;
+            }
+
+            .nav {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .user {
+                position: static;
+                margin-top: 13px;
+            }
+
+            .main {
+                margin: 0;
+                width: 100%;
+                padding: 18px;
+            }
+
+            .top {
+                display: block;
+            }
+
+            .date {
+                margin-top: 5px;
+            }
+
+            .hero {
+                min-height: 300px;
+            }
+
+            .hero-content {
+                padding: 32px 25px;
+            }
+
+            .hero h2 {
+                font-size: 25px;
+            }
+
+            .grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .title {
+                font-size: 22px;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+            }
+
+            .cards,
+            .store {
+                grid-template-columns: 1fr;
+            }
+
+            .nav {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .hero {
+                min-height: 330px;
+            }
+
+            .hero-content {
+                padding: 28px 20px;
+            }
+
+            .hero h2 {
+                font-size: 23px;
+            }
+
+            .actions {
+                gap: 5px;
+            }
+
+            .btn {
+                padding: 9px 6px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: .01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: .01ms !important;
+            }
+        }
+    </style>
 </head>
+
 <body>
-<div class="layout">
-<aside class="side">
-<div class="brand"><img src="/images/banner.png"><div><b>AbuSaud STORE</b><small>BOT MANAGEMENT</small></div></div>
-<nav class="nav">
-<a class="active" onclick="tab('dashboard',this)">◈ لوحة التحكم</a>
-<a onclick="tab('my-bots',this)">◉ بوتاتي</a>
-<a onclick="tab('store',this)">◆ المتجر</a>
-<% if(isAdmin){ %><a onclick="tab('admin',this)">♛ لوحة المشرف</a><% } %>
-</nav>
-<div class="user"><strong><%= currentUser %></strong><span>حساب مسجل في النظام</span><a class="logout" href="/logout">تسجيل الخروج</a></div>
-</aside>
-<main class="main">
-<div class="top"><div><div class="eyebrow">ABUSAUD / CONTROL CENTER</div><div class="title">مرحباً، <%= currentUser %> 👋</div></div><div class="date">لوحة التحكم الخاصة بك</div></div>
 
-<section id="dashboard" class="section active">
-<div class="hero"><div class="hero-content"><span class="pill">● النظام يعمل بشكل طبيعي</span><h2>إدارة بوتاتك<br>من مكان واحد.</h2><p>تحكم في البوتات والخدمات الخاصة بك بسهولة، وتابع حالتها من لوحة واحدة.</p></div></div>
-<div class="grid">
-<div class="stat"><small>إجمالي البوتات</small><strong><%= bots.length %></strong><i>● متصل بالنظام</i></div>
-<div class="stat"><small>البوتات المتصلة</small><strong><%= bots.filter(b=>b.status==='online').length %></strong><i>● Online</i></div>
-<div class="stat"><small>الخدمات المتاحة</small><strong><%= availableScripts.length %></strong><i>● جاهزة</i></div>
-<div class="stat"><small>صلاحية الحساب</small><strong><%= isAdmin ? 'Admin' : 'User' %></strong><i>● نشطة</i></div>
-</div>
-<div class="section-head"><h3>البوتات الأخيرة</h3><span class="muted">إدارة سريعة</span></div>
-<div class="cards">
-<% if(bots.length===0){ %><div class="card"><p class="muted">لا توجد بوتات مضافة لحسابك حالياً.</p></div><% } %>
-<% bots.slice(0,6).forEach(bot=>{ %>
-<div class="card"><div class="bot-top"><div class="bot-icon">🤖</div><div><div class="bot-name"><%= bot.name || 'Bot' %></div><span class="tag"><%= bot.script || 'Bot' %></span></div></div>
-<div class="status">الحالة: <b class="<%= bot.status==='online'?'online':'offline' %>"><%= bot.status==='online'?'● يعمل':'● متوقف' %></b></div>
-<div class="actions"><form action="/start/<%= bot.id %>" method="POST" style="flex:1"><button class="btn start">تشغيل</button></form><form action="/stop/<%= bot.id %>" method="POST" style="flex:1"><button class="btn stop">إيقاف</button></form><form action="/restart/<%= bot.id %>" method="POST" style="flex:1"><button class="btn restart">ريستارت</button></form></div></div>
-<% }) %></div>
-</section>
+    <!-- BACKGROUND -->
+    <div class="background">
+        <div class="grid-bg"></div>
 
-<section id="my-bots" class="section"><div class="section-head"><h3>بوتاتي</h3><span class="muted">جميع البوتات المرتبطة بحسابك</span></div><div class="cards">
-<% if(bots.length===0){ %><div class="card"><p class="muted">لا توجد بوتات حالياً.</p></div><% } %>
-<% bots.forEach(bot=>{ %><div class="card"><div class="bot-top"><div class="bot-icon">🤖</div><div><div class="bot-name"><%= bot.name || 'Bot' %></div><span class="tag"><%= bot.script || 'Bot' %></span></div></div><div class="status">ID: <%= bot.id || '-' %><br>الحالة: <b class="<%= bot.status==='online'?'online':'offline' %>"><%= bot.status==='online'?'● يعمل':'● متوقف' %></b></div></div><% }) %>
-</div></section>
+        <div class="glow one"></div>
+        <div class="glow two"></div>
+        <div class="glow three"></div>
 
-<section id="store" class="section"><div class="section-head"><h3>المتجر</h3><span class="muted">الخدمات المتاحة</span></div><div class="store">
-<% availableScripts.forEach((script,i)=>{ %><div class="card"><span class="tag">SERVICE <%= i+1 %></span><div class="bot-name" style="margin-top:12px"><%= script %> Bot</div><p class="muted" style="margin-top:8px">خدمة احترافية قابلة للإدارة من لوحة التحكم.</p><div class="price">قريباً <span>ر.س</span></div><button class="btn blue">عرض الخدمة</button></div><% }) %>
-</div></section>
+        <div class="stars">
+            <span class="star"></span>
+            <span class="star"></span>
+            <span class="star"></span>
+            <span class="star"></span>
+            <span class="star"></span>
+            <span class="star"></span>
+            <span class="star"></span>
+            <span class="star"></span>
+            <span class="star"></span>
+            <span class="star"></span>
+            <span class="star"></span>
+            <span class="star"></span>
+            <span class="star"></span>
+            <span class="star"></span>
+            <span class="star"></span>
+            <span class="star"></span>
+            <span class="star"></span>
+            <span class="star"></span>
+        </div>
+    </div>
 
-<% if(isAdmin){ %>
-<section id="admin" class="section"><div class="section-head"><h3>لوحة المشرف</h3><span class="muted">إدارة النظام</span></div>
-<div class="admin-box"><h3 style="margin-bottom:15px">إضافة بوت جديد</h3><form action="/add-bot" method="POST">
-<input name="id" placeholder="معرف البوت" required><input name="name" placeholder="اسم البوت" required><input name="token" placeholder="توكن البوت" required><select name="script"><% availableScripts.forEach(s=>{ %><option value="<%= s.toLowerCase() %>"><%= s %></option><% }) %></select><input name="owner" placeholder="اسم صاحب البوت" required><button class="btn blue" type="submit">إضافة البوت للنظام</button>
-</form></div>
-<div class="admin-box"><h3 style="margin-bottom:12px">المستخدمون</h3><table class="table"><thead><tr><th>المستخدم</th><th>الصلاحية</th></tr></thead><tbody><% allUsers.forEach(u=>{ %><tr><td><%= u.username %></td><td><%= u.isAdmin?'♛ Admin':'User' %></td></tr><% }) %></tbody></table></div>
-</section>
-<% } %>
-</main>
-</div>
-<script>
-function tab(id,el){document.querySelectorAll('.section').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.nav a').forEach(x=>x.classList.remove('active'));document.getElementById(id).classList.add('active');el.classList.add('active')}
-</script>
+
+    <div class="layout">
+
+        <!-- SIDEBAR -->
+        <aside class="side">
+
+            <div class="brand">
+                <img src="/images/banner.png" alt="AbuSaud Store">
+
+                <div>
+                    <b>AbuSaud STORE</b>
+                    <small>BOT MANAGEMENT</small>
+                </div>
+            </div>
+
+
+            <nav class="nav">
+
+                <a class="active" onclick="tab('dashboard', this)">
+                    لوحة التحكم
+                </a>
+
+                <a onclick="tab('my-bots', this)">
+                    بوتاتي
+                </a>
+
+                <a onclick="tab('store', this)">
+                    المتجر
+                </a>
+
+                <% if(isAdmin){ %>
+                    <a onclick="tab('admin', this)">
+                        لوحة المشرف
+                    </a>
+                <% } %>
+
+            </nav>
+
+
+            <div class="user">
+
+                <strong>
+                    <%= currentUser %>
+                </strong>
+
+                <span>
+                    حساب مسجل في النظام
+                </span>
+
+                <a class="logout" href="/logout">
+                    تسجيل الخروج
+                </a>
+
+            </div>
+
+        </aside>
+
+
+        <!-- MAIN -->
+        <main class="main">
+
+            <!-- TOP -->
+            <div class="top">
+
+                <div>
+
+                    <div class="eyebrow">
+                        ABUSAUD / CONTROL CENTER
+                    </div>
+
+                    <div class="title">
+                        مرحباً، <%= currentUser %>
+                    </div>
+
+                </div>
+
+                <div class="date">
+                    لوحة التحكم الخاصة بك
+                </div>
+
+            </div>
+
+
+            <!-- DASHBOARD -->
+            <section id="dashboard" class="section active">
+
+                <div class="hero">
+
+                    <div class="hero-content">
+
+                        <span class="pill">
+                            النظام يعمل بشكل طبيعي
+                        </span>
+
+                        <h2>
+                            إدارة بوتاتك
+                            <br>
+                            من مكان واحد.
+                        </h2>
+
+                        <p>
+                            تحكم في البوتات والخدمات الخاصة بك بسهولة،
+                            وتابع حالتها وإدارتها من لوحة تحكم واحدة.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <!-- STATS -->
+                <div class="grid">
+
+                    <div class="stat">
+                        <small>إجمالي البوتات</small>
+
+                        <strong>
+                            <%= bots.length %>
+                        </strong>
+
+                        <i>
+                            النظام
+                        </i>
+                    </div>
+
+
+                    <div class="stat">
+                        <small>البوتات المتصلة</small>
+
+                        <strong>
+                            <%= bots.filter(b => b.status === 'online').length %>
+                        </strong>
+
+                        <i>
+                            Online
+                        </i>
+                    </div>
+
+
+                    <div class="stat">
+                        <small>الخدمات المتاحة</small>
+
+                        <strong>
+                            <%= availableScripts.length %>
+                        </strong>
+
+                        <i>
+                            جاهزة
+                        </i>
+                    </div>
+
+
+                    <div class="stat">
+                        <small>صلاحية الحساب</small>
+
+                        <strong>
+                            <%= isAdmin ? 'Admin' : 'User' %>
+                        </strong>
+
+                        <i>
+                            نشطة
+                        </i>
+                    </div>
+
+                </div>
+
+
+                <!-- RECENT BOTS -->
+                <div class="section-head">
+
+                    <h3>
+                        البوتات الأخيرة
+                    </h3>
+
+                    <span class="muted">
+                        إدارة سريعة
+                    </span>
+
+                </div>
+
+
+                <div class="cards">
+
+                    <% if(bots.length === 0){ %>
+
+                        <div class="card">
+                            <p class="muted">
+                                لا توجد بوتات مضافة لحسابك حالياً.
+                            </p>
+                        </div>
+
+                    <% } %>
+
+
+                    <% bots.slice(0, 6).forEach(bot => { %>
+
+                        <div class="card">
+
+                            <div class="bot-top">
+
+                                <div class="bot-icon">
+                                    BOT
+                                </div>
+
+                                <div>
+
+                                    <div class="bot-name">
+                                        <%= bot.name || 'Bot' %>
+                                    </div>
+
+                                    <span class="tag">
+                                        <%= bot.script || 'Bot' %>
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="status">
+
+                                الحالة:
+
+                                <b class="<%= bot.status === 'online' ? 'online' : 'offline' %>">
+
+                                    <%= bot.status === 'online' ? 'يعمل' : 'متوقف' %>
+
+                                </b>
+
+                            </div>
+
+
+                            <div class="actions">
+
+                                <form
+                                    action="/start/<%= bot.id %>"
+                                    method="POST"
+                                    style="flex:1"
+                                >
+                                    <button class="btn start">
+                                        تشغيل
+                                    </button>
+                                </form>
+
+
+                                <form
+                                    action="/stop/<%= bot.id %>"
+                                    method="POST"
+                                    style="flex:1"
+                                >
+                                    <button class="btn stop">
+                                        إيقاف
+                                    </button>
+                                </form>
+
+
+                                <form
+                                    action="/restart/<%= bot.id %>"
+                                    method="POST"
+                                    style="flex:1"
+                                >
+                                    <button class="btn restart">
+                                        ريستارت
+                                    </button>
+                                </form>
+
+                            </div>
+
+                        </div>
+
+                    <% }) %>
+
+                </div>
+
+            </section>
+
+
+            <!-- MY BOTS -->
+            <section id="my-bots" class="section">
+
+                <div class="section-head">
+
+                    <h3>
+                        بوتاتي
+                    </h3>
+
+                    <span class="muted">
+                        جميع البوتات المرتبطة بحسابك
+                    </span>
+
+                </div>
+
+
+                <div class="cards">
+
+                    <% if(bots.length === 0){ %>
+
+                        <div class="card">
+
+                            <p class="muted">
+                                لا توجد بوتات حالياً.
+                            </p>
+
+                        </div>
+
+                    <% } %>
+
+
+                    <% bots.forEach(bot => { %>
+
+                        <div class="card">
+
+                            <div class="bot-top">
+
+                                <div class="bot-icon">
+                                    BOT
+                                </div>
+
+                                <div>
+
+                                    <div class="bot-name">
+                                        <%= bot.name || 'Bot' %>
+                                    </div>
+
+                                    <span class="tag">
+                                        <%= bot.script || 'Bot' %>
+                                    </span>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="status">
+
+                                ID:
+                                <%= bot.id || '-' %>
+
+                                <br>
+
+                                الحالة:
+
+                                <b class="<%= bot.status === 'online' ? 'online' : 'offline' %>">
+
+                                    <%= bot.status === 'online' ? 'يعمل' : 'متوقف' %>
+
+                                </b>
+
+                            </div>
+
+                        </div>
+
+                    <% }) %>
+
+                </div>
+
+            </section>
+
+
+            <!-- STORE -->
+            <section id="store" class="section">
+
+                <div class="section-head">
+
+                    <h3>
+                        المتجر
+                    </h3>
+
+                    <span class="muted">
+                        الخدمات المتاحة
+                    </span>
+
+                </div>
+
+
+                <div class="store">
+
+                    <% availableScripts.forEach((script, i) => { %>
+
+                        <div class="card">
+
+                            <span class="tag">
+                                SERVICE <%= i + 1 %>
+                            </span>
+
+
+                            <div
+                                class="bot-name"
+                                style="margin-top:12px"
+                            >
+                                <%= script %> Bot
+                            </div>
+
+
+                            <p
+                                class="muted"
+                                style="margin-top:8px"
+                            >
+                                خدمة احترافية قابلة للإدارة
+                                من لوحة التحكم.
+                            </p>
+
+
+                            <div class="price">
+                                قريباً
+                                <span>ر.س</span>
+                            </div>
+
+
+                            <button class="btn blue">
+                                عرض الخدمة
+                            </button>
+
+                        </div>
+
+                    <% }) %>
+
+                </div>
+
+            </section>
+
+
+            <!-- ADMIN -->
+            <% if(isAdmin){ %>
+
+                <section id="admin" class="section">
+
+                    <div class="section-head">
+
+                        <h3>
+                            لوحة المشرف
+                        </h3>
+
+                        <span class="muted">
+                            إدارة النظام
+                        </span>
+
+                    </div>
+
+
+                    <!-- ADD BOT -->
+                    <div class="admin-box">
+
+                        <h3 style="margin-bottom:15px">
+                            إضافة بوت جديد
+                        </h3>
+
+
+                        <form
+                            action="/add-bot"
+                            method="POST"
+                        >
+
+                            <input
+                                name="id"
+                                placeholder="معرف البوت"
+                                required
+                            >
+
+
+                            <input
+                                name="name"
+                                placeholder="اسم البوت"
+                                required
+                            >
+
+
+                            <input
+                                name="token"
+                                placeholder="توكن البوت"
+                                required
+                            >
+
+
+                            <select name="script">
+
+                                <% availableScripts.forEach(s => { %>
+
+                                    <option value="<%= s.toLowerCase() %>">
+                                        <%= s %>
+                                    </option>
+
+                                <% }) %>
+
+                            </select>
+
+
+                            <input
+                                name="owner"
+                                placeholder="اسم صاحب البوت"
+                                required
+                            >
+
+
+                            <button
+                                class="btn blue"
+                                type="submit"
+                            >
+                                إضافة البوت للنظام
+                            </button>
+
+                        </form>
+
+                    </div>
+
+
+                    <!-- USERS -->
+                    <div class="admin-box">
+
+                        <h3 style="margin-bottom:12px">
+                            المستخدمون
+                        </h3>
+
+
+                        <div class="table-wrap">
+
+                            <table class="table">
+
+                                <thead>
+
+                                    <tr>
+                                        <th>المستخدم</th>
+                                        <th>الصلاحية</th>
+                                    </tr>
+
+                                </thead>
+
+
+                                <tbody>
+
+                                    <% allUsers.forEach(u => { %>
+
+                                        <tr>
+
+                                            <td>
+                                                <%= u.username %>
+                                            </td>
+
+                                            <td>
+                                                <%= u.isAdmin ? 'Admin' : 'User' %>
+                                            </td>
+
+                                        </tr>
+
+                                    <% }) %>
+
+                                </tbody>
+
+                            </table>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+            <% } %>
+
+        </main>
+
+    </div>
+
+
+    <script>
+
+        function tab(id, el) {
+
+            document
+                .querySelectorAll('.section')
+                .forEach(section => {
+                    section.classList.remove('active');
+                });
+
+
+            document
+                .querySelectorAll('.nav a')
+                .forEach(link => {
+                    link.classList.remove('active');
+                });
+
+
+            const target = document.getElementById(id);
+
+            if (target) {
+                target.classList.add('active');
+            }
+
+
+            if (el) {
+                el.classList.add('active');
+            }
+
+
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+
+
+        /*
+         * Subtle mouse glow
+         */
+
+        document.addEventListener('mousemove', function(e) {
+
+            const x = (e.clientX / window.innerWidth) * 100;
+            const y = (e.clientY / window.innerHeight) * 100;
+
+            document.body.style.background = `
+                radial-gradient(
+                    circle at ${x}% ${y}%,
+                    rgba(37, 99, 235, .055),
+                    transparent 24%
+                ),
+                radial-gradient(
+                    circle at 50% -10%,
+                    rgba(37, 99, 235, .14),
+                    transparent 32%
+                ),
+                radial-gradient(
+                    circle at 100% 50%,
+                    rgba(124, 58, 237, .08),
+                    transparent 28%
+                ),
+                radial-gradient(
+                    circle at 0% 80%,
+                    rgba(14, 165, 233, .06),
+                    transparent 25%
+                ),
+                #050811
+            `;
+
+        });
+
+
+        /*
+         * Prevent accidental double clicks on forms
+         */
+
+        document.querySelectorAll('form').forEach(form => {
+
+            form.addEventListener('submit', function() {
+
+                const button = form.querySelector('button');
+
+                if (!button) return;
+
+                button.style.opacity = '.65';
+                button.style.pointerEvents = 'none';
+
+            });
+
+        });
+
+    </script>
+
 </body>
 </html>
+```
