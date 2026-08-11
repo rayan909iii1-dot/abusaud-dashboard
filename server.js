@@ -1274,6 +1274,128 @@ const client =
     });
 
 // ======================================================
+// BOT MANAGER
+// ======================================================
+
+const runningBots = new Map();
+
+async function startManagedBot(bot) {
+    if (!bot || !bot.token) {
+        return false;
+    }
+
+    // إذا كان شغال بالفعل
+    if (runningBots.has(bot.id)) {
+        return true;
+    }
+
+    try {
+        const botClient = new Client({
+            intents: [
+                GatewayIntentBits.Guilds,
+                GatewayIntentBits.GuildMembers,
+                GatewayIntentBits.GuildModeration,
+                GatewayIntentBits.GuildMessages,
+                GatewayIntentBits.MessageContent
+            ]
+        });
+
+        // ==========================================
+        // PROTECTION BOT
+        // ==========================================
+
+        if (
+            String(bot.type).toLowerCase() === 'protection'
+        ) {
+
+            botClient.on('ready', () => {
+
+                console.log(
+                    `🛡️ Protection Bot "${bot.name}" is online as ${botClient.user.tag}`
+                );
+
+                updateBotStatus(
+                    bot.id,
+                    'يعمل'
+                );
+            });
+
+            // هنا نحط أنظمة الحماية الخاصة بالبوت
+            setupProtectionBot(botClient, bot);
+        }
+
+        // ==========================================
+        // WELCOME BOT
+        // ==========================================
+
+        if (
+            String(bot.type).toLowerCase() === 'welcome'
+        ) {
+
+            botClient.on('ready', () => {
+
+                console.log(
+                    `👋 Welcome Bot "${bot.name}" is online as ${botClient.user.tag}`
+                );
+
+                updateBotStatus(
+                    bot.id,
+                    'يعمل'
+                );
+            });
+
+            setupWelcomeBot(botClient, bot);
+        }
+
+        // ==========================================
+        // TICKETS BOT
+        // ==========================================
+
+        if (
+            String(bot.type).toLowerCase() === 'tickets'
+        ) {
+
+            botClient.on('ready', () => {
+
+                console.log(
+                    `🎫 Tickets Bot "${bot.name}" is online as ${botClient.user.tag}`
+                );
+
+                updateBotStatus(
+                    bot.id,
+                    'يعمل'
+                );
+            });
+
+            setupTicketsBot(botClient, bot);
+        }
+
+        await botClient.login(bot.token);
+
+        runningBots.set(
+            bot.id,
+            botClient
+        );
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            `❌ Failed to start bot ${bot.name}:`,
+            error.message
+        );
+
+        updateBotStatus(
+            bot.id,
+            'متوقف'
+        );
+
+        return false;
+    }
+}
+
+// ======================================================
 // PENDING DISCORD VERIFICATIONS
 // ======================================================
 
