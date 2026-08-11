@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>إنشاء حساب - AbuSaud STORE</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Tahoma', sans-serif; }
+        body { background: #0b0f19; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; background-image: radial-gradient(circle at 50% 50%, #111827 0%, #0b0f19 100%); }
+        
+        .auth-card {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            padding: 40px 30px;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .auth-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #10b981, #34d399);
+        }
+
+        .auth-brand { text-align: center; margin-bottom: 30px; }
+        .auth-brand h2 { color: #fff; font-size: 26px; margin-bottom: 8px; font-weight: 800; letter-spacing: 0.5px; }
+        .auth-brand h2 span { color: #10b981; }
+        .auth-brand p { color: #9ca3af; font-size: 14px; }
+
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; font-size: 13px; color: #9ca3af; font-weight: bold; }
+        
+        input {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 10px;
+            border: 1px solid #1f2937;
+            background: rgba(11, 15, 25, 0.8);
+            color: #fff;
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            border-color: #10b981;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+            outline: none;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            margin-top: 10px;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+        }
+
+        .error-msg {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #f87171;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .auth-footer { text-align: center; margin-top: 25px; font-size: 14px; color: #9ca3af; }
+        .auth-footer a { color: #34d399; text-decoration: none; font-weight: bold; transition: 0.2s; }
+        .auth-footer a:hover { color: #10b981; text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <div class="auth-card">
+        <div class="auth-brand">
+            <h2>AbuSaud <span>STORE</span></h2>
+            <p>انشئ حساباً جديداً لإدارة بوتاتك</p>
+        </div>
+
+        <% if (error) { %>
+            <div class="error-msg"><%= error %></div>
+        <% } %>
+
+        <form action="/register" method="POST">
+            <div class="form-group">
+                <label>اسم المستخدم</label>
+                <input type="text" name="username" placeholder="اختر اسم مستخدم مميز" required>
+            </div>
+            <div class="form-group">
+                <label>كلمة المرور</label>
+                <input type="password" name="password" placeholder="أدخل كلمة مرور قوية" required>
+            </div>
+            <button type="submit" class="btn-submit">تسجيل الحساب ✨</button>
+        </form>
+
+        <div class="auth-footer">
+            لديك حساب بالفعل؟ <a href="/login">تسجيل الدخول</a>
+        </div>
+    </div>
+
+</body>
+</html>
