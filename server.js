@@ -404,6 +404,7 @@ app.get('/', (req, res) => {
 
             availableScripts: [
                 'Welcome',
+                'bot',
                 'Tickets',
                 'Protection'
             ],
