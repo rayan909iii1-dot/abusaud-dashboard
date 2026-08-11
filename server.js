@@ -57,9 +57,9 @@ function saveDB(data) {
 }
 
 const mailTransporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: Number(process.env.SMTP_PORT || 465),
-    secure: Number(process.env.SMTP_PORT || 465) === 465,
+    host: process.env.SMTP_HOST || 'smtp-relay.brevo.com',
+    port: Number(process.env.SMTP_PORT || 587),
+    secure: false,
     auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS
@@ -230,6 +230,12 @@ app.post('/register', async (req, res) => {
 
     const code = makeCode();
 
+    // طباعة الكود في الـ Logs كح احتياطي عشان يظهر لك فوراً
+    console.log(`========================================`);
+    console.log(`[VERIFICATION CODE] For user: ${username} (${email})`);
+    console.log(`CODE IS: --> ${code} <--`);
+    console.log(`========================================`);
+
     req.session.pendingRegistration = {
         username,
         email,
@@ -242,7 +248,7 @@ app.post('/register', async (req, res) => {
     try {
         await Promise.race([
             sendVerificationEmail(email, username, code),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('SMTP_TIMEOUT')), 10000))
+            new Promise((_, reject) => setTimeout(() => reject(new Error('SMTP_TIMEOUT')), 8000))
         ]);
 
         res.render('verify', {
@@ -251,11 +257,12 @@ app.post('/register', async (req, res) => {
             embed: embedData
         });
     } catch (error) {
-        console.error('Email send error:', error);
-        delete req.session.pendingRegistration;
-
-        res.render('register', {
-            error: error.message === 'SMTP_TIMEOUT' ? 'استغرق الاتصال بخدمة البريد وقتاً طويلاً. تأكد من إعداداتك.' : 'تعذر إرسال كود التحقق. تأكد من إعدادات البريد في Railway.',
+        console.error('Email send error (Code is printed above in logs):', error);
+        
+        // حتى لو فشل إرسال الإيميل، راح ينقله لصفحة إدخال الكود ويقدر يكتب الكود اللي شافه بالـ Logs
+        res.render('verify', {
+            error: 'تعذر إرسال الإيميل، لكن تم طباعة الكود في سجلات Railway (Logs).',
+            email,
             embed: embedData
         });
     }
@@ -353,6 +360,11 @@ app.post('/resend-verification', async (req, res) => {
 
     const code = makeCode();
 
+    console.log(`========================================`);
+    console.log(`[RESEND CODE] For user: ${pending.username} (${pending.email})`);
+    console.log(`NEW CODE IS: --> ${code} <--`);
+    console.log(`========================================`);
+
     pending.codeHash = hashCode(code);
     pending.expiresAt = Date.now() + 10 * 60 * 1000;
     pending.lastSentAt = Date.now();
@@ -360,11 +372,11 @@ app.post('/resend-verification', async (req, res) => {
     try {
         await Promise.race([
             sendVerificationEmail(pending.email, pending.username, code),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('SMTP_TIMEOUT')), 10000))
+            new Promise((_, reject) => setTimeout(() => reject(new Error('SMTP_TIMEOUT')), 8000))
         ]);
 
         res.render('verify', {
-            error: 'تم إرسال كود جديد إلى بريدك الإلكتروني.',
+            error: 'تم إرسال كود جديد إلى بريدك الإلكتروني (ومتوفر في Logs).',
             email: pending.email,
             success: true,
             embed: embedData
@@ -373,7 +385,7 @@ app.post('/resend-verification', async (req, res) => {
         console.error('Resend email error:', error);
 
         res.render('verify', {
-            error: 'تعذر إعادة إرسال الكود حالياً.',
+            error: 'تعذر إرسال الإيميل، الكود موجود في Railway Logs.',
             email: pending.email,
             embed: embedData
         });
