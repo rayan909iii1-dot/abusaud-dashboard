@@ -647,4 +647,4 @@ client.on('interactionCreate', async interaction => {
 });
 
 // تسجيل الدخول بالبوت باستخدام متغير البيئة DISCORD_TOKEN
-client.login(process.env.DISCORD_TOKEN);
+client.login("MTUzNjYyNTg5MTYxNzI3NTkyNA.GGolS4.U5Cr03XtTeoaewkBydTb5j48q9Zb1w2yTQq4Rw");
