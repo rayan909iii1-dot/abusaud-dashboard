@@ -20,6 +20,13 @@
 <div class="eyebrow">ABUSAUD / STORE</div>
 <div class="title">إنشاء حساب جديد</div>
 <div class="sub">سجّل حسابك ثم أكد بريدك الإلكتروني بكود التحقق</div>
+<div class="verify-container">
+    <h3>تسجيل الدخول عبر ديسكورد</h3>
+    <p>تم إرسال كود التحقق إلى رسائلك الخاصة في ديسكورد، اكتبه هنا:</p>
+    <input type="text" id="verificationCode" placeholder="أدخل الكود (مثال: 127887)" maxlength="6">
+    <button onclick="submitCode()">تحقق وتسجيل الدخول</button>
+    <p id="msg" style="color: red;"></p>
+</div>
 
 <% if(error){ %><div class="error"><%= error %></div><% } %>
 
