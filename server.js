@@ -1,3 +1,4 @@
+```js
 const express = require('express');
 const session = require('express-session');
 const FileStore = require('session-file-store')(session);
@@ -16,7 +17,9 @@ const {
     ModalBuilder,
     TextInputBuilder,
     TextInputStyle,
-    StringSelectMenuBuilder
+    StringSelectMenuBuilder,
+    PermissionsBitField,
+    ChannelType
 } = require('discord.js');
 
 const app = express();
@@ -31,7 +34,6 @@ const SITE_URL =
     process.env.SITE_URL ||
     'https://abusaud-dashboard-production.up.railway.app';
 
-// هذا الـID أنت فقط تقدر تستخدم لوحة الإدارة
 const ADMIN_DISCORD_ID = '1113483140086907093';
 
 // ======================================================
@@ -43,18 +45,27 @@ app.set('views', path.join(__dirname, 'views'));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));
+
+app.use(
+    express.static(
+        path.join(__dirname, 'public')
+    )
+);
 
 // ======================================================
 // SESSIONS
 // ======================================================
 
-const sessionsPath = path.join(__dirname, 'sessions');
+const sessionsPath =
+    path.join(__dirname, 'sessions');
 
 if (!fs.existsSync(sessionsPath)) {
-    fs.mkdirSync(sessionsPath, {
-        recursive: true
-    });
+    fs.mkdirSync(
+        sessionsPath,
+        {
+            recursive: true
+        }
+    );
 }
 
 app.use(
@@ -74,7 +85,12 @@ app.use(
         cookie: {
             secure: false,
             httpOnly: true,
-            maxAge: 1000 * 60 * 60 * 24 * 7
+            maxAge:
+                1000 *
+                60 *
+                60 *
+                24 *
+                7
         }
     })
 );
@@ -84,20 +100,25 @@ app.use(
 // ======================================================
 
 const databasePath =
-    path.join(__dirname, 'database.json');
+    path.join(
+        __dirname,
+        'database.json'
+    );
 
 function getDB() {
 
     if (!fs.existsSync(databasePath)) {
 
         const initial = {
+
             users: [
                 {
                     username: 'abu saud',
                     password: '123',
                     email: 'admin@example.com',
                     isAdmin: true,
-                    emailVerified: true
+                    emailVerified: true,
+                    discordId: ADMIN_DISCORD_ID
                 }
             ],
 
@@ -277,7 +298,7 @@ margin:0;
 background:#070b14;
 font-family:Arial,Tahoma,sans-serif;
 color:#fff;
-padding:35px
+padding:35px;
 ">
 
 <div style="
@@ -286,7 +307,7 @@ margin:auto;
 background:#0d1422;
 border:1px solid #243149;
 border-radius:18px;
-padding:30px
+padding:30px;
 ">
 
 <h2>
@@ -311,7 +332,7 @@ background:#080d17;
 border:1px solid #273449;
 border-radius:12px;
 padding:18px;
-margin:25px 0
+margin:25px 0;
 ">
 
 ${code}
@@ -320,7 +341,7 @@ ${code}
 
 <p style="
 color:#94a3b8;
-font-size:13px
+font-size:13px;
 ">
 
 الكود صالح لمدة 10 دقائق فقط.
@@ -337,7 +358,7 @@ font-size:13px
 }
 
 // ======================================================
-// EMBED
+// EMBED DATA
 // ======================================================
 
 const embedData = {
@@ -356,14 +377,770 @@ const embedData = {
 };
 
 // ======================================================
+// BOT MANAGER
+// ======================================================
+
+const runningBots = new Map();
+
+// ======================================================
+// UPDATE BOT STATUS
+// ======================================================
+
+function updateBotStatus(
+    botId,
+    status
+) {
+
+    try {
+
+        const db =
+            getDB();
+
+        const bot =
+            db.bots.find(
+                b =>
+                    b.id === botId
+            );
+
+        if (!bot) {
+            return false;
+        }
+
+        bot.status =
+            status;
+
+        bot.updatedAt =
+            new Date()
+                .toISOString();
+
+        saveDB(db);
+
+        console.log(
+            `[BOT STATUS] ${bot.name || bot.id} => ${status}`
+        );
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            '[UPDATE BOT STATUS ERROR]',
+            error
+        );
+
+        return false;
+    }
+}
+
+// ======================================================
+// WELCOME BOT
+// ======================================================
+
+function setupWelcomeBot(
+    botClient,
+    bot
+) {
+
+    botClient.on(
+        'guildMemberAdd',
+        async member => {
+
+            try {
+
+                const channel =
+                    member.guild.channels.cache.find(
+                        channel =>
+                            channel.type ===
+                                ChannelType.GuildText &&
+                            (
+                                channel.name
+                                    .toLowerCase()
+                                    .includes('welcome') ||
+                                channel.name
+                                    .toLowerCase()
+                                    .includes('ترحيب')
+                            )
+                    );
+
+                if (!channel) {
+                    return;
+                }
+
+                const embed =
+                    new EmbedBuilder()
+
+                        .setTitle(
+                            '👋 أهلاً وسهلاً!'
+                        )
+
+                        .setDescription(
+                            `مرحباً ${member} في **${member.guild.name}**!`
+                        )
+
+                        .setColor(
+                            0x00b7ff
+                        )
+
+                        .setThumbnail(
+                            member.user.displayAvatarURL({
+                                size: 256
+                            })
+                        )
+
+                        .setTimestamp();
+
+                await channel.send({
+                    embeds: [
+                        embed
+                    ]
+                });
+
+            } catch (error) {
+
+                console.error(
+                    `[WELCOME ERROR] ${bot.name}`,
+                    error
+                );
+            }
+        }
+    );
+}
+
+// ======================================================
+// TICKETS BOT
+// ======================================================
+
+function setupTicketsBot(
+    botClient,
+    bot
+) {
+
+    botClient.on(
+        'messageCreate',
+        async message => {
+
+            if (
+                message.author.bot
+            ) {
+                return;
+            }
+
+            if (
+                message.content ===
+                '!ticket'
+            ) {
+
+                const embed =
+                    new EmbedBuilder()
+
+                        .setTitle(
+                            '🎫 الدعم الفني'
+                        )
+
+                        .setDescription(
+                            'اضغط على الزر بالأسفل لفتح تذكرة.'
+                        )
+
+                        .setColor(
+                            0x00b7ff
+                        );
+
+                const row =
+                    new ActionRowBuilder()
+                        .addComponents(
+
+                            new ButtonBuilder()
+
+                                .setCustomId(
+                                    'create_ticket'
+                                )
+
+                                .setLabel(
+                                    'فتح تذكرة'
+                                )
+
+                                .setEmoji(
+                                    '🎫'
+                                )
+
+                                .setStyle(
+                                    ButtonStyle.Primary
+                                )
+                        );
+
+                await message.channel.send({
+                    embeds: [
+                        embed
+                    ],
+                    components: [
+                        row
+                    ]
+                });
+            }
+        }
+    );
+
+    botClient.on(
+        'interactionCreate',
+        async interaction => {
+
+            if (
+                !interaction.isButton()
+            ) {
+                return;
+            }
+
+            if (
+                interaction.customId !==
+                'create_ticket'
+            ) {
+                return;
+            }
+
+            try {
+
+                const guild =
+                    interaction.guild;
+
+                if (!guild) {
+                    return;
+                }
+
+                const existing =
+                    guild.channels.cache.find(
+                        channel =>
+                            channel.name ===
+                            `ticket-${interaction.user.id}`
+                    );
+
+                if (existing) {
+
+                    return interaction.reply({
+
+                        content:
+                            `لديك تذكرة مفتوحة بالفعل: ${existing}`,
+
+                        ephemeral:
+                            true
+                    });
+                }
+
+                const channel =
+                    await guild.channels.create({
+
+                        name:
+                            `ticket-${interaction.user.id}`,
+
+                        type:
+                            ChannelType.GuildText,
+
+                        permissionOverwrites: [
+
+                            {
+                                id:
+                                    guild.roles.everyone.id,
+
+                                deny: [
+                                    PermissionsBitField.Flags.ViewChannel
+                                ]
+                            },
+
+                            {
+                                id:
+                                    interaction.user.id,
+
+                                allow: [
+                                    PermissionsBitField.Flags.ViewChannel,
+                                    PermissionsBitField.Flags.SendMessages,
+                                    PermissionsBitField.Flags.ReadMessageHistory
+                                ]
+                            }
+                        ]
+                    });
+
+                const embed =
+                    new EmbedBuilder()
+
+                        .setTitle(
+                            '🎫 تذكرتك'
+                        )
+
+                        .setDescription(
+                            'اكتب مشكلتك هنا وسيتم الرد عليك.'
+                        )
+
+                        .setColor(
+                            0x00b7ff
+                        );
+
+                await channel.send({
+                    content:
+                        `${interaction.user}`,
+
+                    embeds: [
+                        embed
+                    ]
+                });
+
+                await interaction.reply({
+
+                    content:
+                        `✅ تم فتح تذكرتك: ${channel}`,
+
+                    ephemeral:
+                        true
+                });
+
+            } catch (error) {
+
+                console.error(
+                    `[TICKET ERROR] ${bot.name}`,
+                    error
+                );
+
+                if (
+                    !interaction.replied
+                ) {
+
+                    await interaction.reply({
+
+                        content:
+                            '❌ تعذر إنشاء التذكرة.',
+
+                        ephemeral:
+                            true
+                    });
+                }
+            }
+        }
+    );
+}
+
+// ======================================================
+// PROTECTION BOT
+// ======================================================
+
+function setupProtectionBot(
+    botClient,
+    bot
+) {
+
+    const guildState =
+        new Map();
+
+    botClient.on(
+        'guildMemberAdd',
+        async member => {
+
+            try {
+
+                const key =
+                    member.guild.id;
+
+                if (
+                    !guildState.has(key)
+                ) {
+
+                    guildState.set(
+                        key,
+                        {
+                            joins: []
+                        }
+                    );
+                }
+
+                const state =
+                    guildState.get(key);
+
+                const now =
+                    Date.now();
+
+                state.joins =
+                    state.joins.filter(
+                        time =>
+                            now - time <
+                            10000
+                    );
+
+                state.joins.push(
+                    now
+                );
+
+                // حماية بسيطة من دخول عدد كبير
+                // من الأعضاء في وقت قصير
+                if (
+                    state.joins.length >= 10
+                ) {
+
+                    console.log(
+                        `[PROTECTION] Possible raid in ${member.guild.name}`
+                    );
+                }
+
+            } catch (error) {
+
+                console.error(
+                    `[PROTECTION ERROR] ${bot.name}`,
+                    error
+                );
+            }
+        }
+    );
+
+    botClient.on(
+        'messageCreate',
+        async message => {
+
+            if (
+                message.author.bot
+            ) {
+                return;
+            }
+
+            if (
+                message.content ===
+                '!protection'
+            ) {
+
+                const embed =
+                    new EmbedBuilder()
+
+                        .setTitle(
+                            '🛡️ Protection'
+                        )
+
+                        .setDescription(
+                            'نظام الحماية يعمل بشكل طبيعي.'
+                        )
+
+                        .setColor(
+                            0x00ff88
+                        )
+
+                        .setTimestamp();
+
+                await message.reply({
+                    embeds: [
+                        embed
+                    ]
+                });
+            }
+        }
+    );
+}
+
+// ======================================================
+// START MANAGED BOT
+// ======================================================
+
+async function startManagedBot(
+    bot
+) {
+
+    if (
+        !bot ||
+        !bot.token
+    ) {
+        return false;
+    }
+
+    // البوت شغال بالفعل
+    if (
+        runningBots.has(bot.id)
+    ) {
+
+        return true;
+    }
+
+    try {
+
+        const botClient =
+            new Client({
+
+                intents: [
+
+                    GatewayIntentBits.Guilds,
+
+                    GatewayIntentBits.GuildMembers,
+
+                    GatewayIntentBits.GuildModeration,
+
+                    GatewayIntentBits.GuildMessages,
+
+                    GatewayIntentBits.MessageContent
+                ]
+            });
+
+        // ------------------------------------------
+        // READY
+        // ------------------------------------------
+
+        botClient.once(
+            'ready',
+            () => {
+
+                console.log(
+                    `🤖 Bot "${bot.name}" is online as ${botClient.user.tag}`
+                );
+
+                updateBotStatus(
+                    bot.id,
+                    'يعمل'
+                );
+            }
+        );
+
+        // ------------------------------------------
+        // BOT TYPE
+        // ------------------------------------------
+
+        const type =
+            String(
+                bot.type || ''
+            )
+                .toLowerCase()
+                .trim();
+
+        if (
+            type ===
+            'protection'
+        ) {
+
+            setupProtectionBot(
+                botClient,
+                bot
+            );
+
+        } else if (
+            type ===
+            'welcome'
+        ) {
+
+            setupWelcomeBot(
+                botClient,
+                bot
+            );
+
+        } else if (
+            type ===
+            'tickets'
+        ) {
+
+            setupTicketsBot(
+                botClient,
+                bot
+            );
+
+        } else {
+
+            console.log(
+                `[BOT] Unknown bot type: ${bot.type}`
+            );
+        }
+
+        // ------------------------------------------
+        // DISCONNECT / ERROR
+        // ------------------------------------------
+
+        botClient.on(
+            'error',
+            error => {
+
+                console.error(
+                    `[BOT ERROR] ${bot.name}`,
+                    error.message
+                );
+            }
+        );
+
+        botClient.on(
+            'shardDisconnect',
+            () => {
+
+                console.log(
+                    `[BOT DISCONNECTED] ${bot.name}`
+                );
+
+                runningBots.delete(
+                    bot.id
+                );
+
+                updateBotStatus(
+                    bot.id,
+                    'متوقف'
+                );
+            }
+        );
+
+        // ------------------------------------------
+        // LOGIN
+        // ------------------------------------------
+
+        await botClient.login(
+            bot.token
+        );
+
+        runningBots.set(
+            bot.id,
+            botClient
+        );
+
+        updateBotStatus(
+            bot.id,
+            'يعمل'
+        );
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            `❌ Failed to start bot ${bot.name}:`,
+            error.message
+        );
+
+        updateBotStatus(
+            bot.id,
+            'متوقف'
+        );
+
+        return false;
+    }
+}
+
+// ======================================================
+// STOP MANAGED BOT
+// ======================================================
+
+async function stopManagedBot(
+    botId
+) {
+
+    const botClient =
+        runningBots.get(
+            botId
+        );
+
+    if (!botClient) {
+
+        updateBotStatus(
+            botId,
+            'متوقف'
+        );
+
+        return true;
+    }
+
+    try {
+
+        botClient.destroy();
+
+        runningBots.delete(
+            botId
+        );
+
+        updateBotStatus(
+            botId,
+            'متوقف'
+        );
+
+        return true;
+
+    } catch (error) {
+
+        console.error(
+            '[STOP BOT ERROR]',
+            error
+        );
+
+        return false;
+    }
+}
+
+// ======================================================
 // HOME
 // ======================================================
 
-app.get('/', (req, res) => {
+app.get(
+    '/',
+    (req, res) => {
 
-    if (!req.session.user) {
+        if (
+            !req.session.user
+        ) {
 
-        return res.render(
+            return res.render(
+                'login',
+                {
+                    error: null,
+                    embed: embedData
+                }
+            );
+        }
+
+        const db =
+            getDB();
+
+        const isAdmin =
+            Boolean(
+                req.session.user.isAdmin
+            );
+
+        const bots =
+            isAdmin
+                ? db.bots
+                : db.bots.filter(
+                    bot =>
+                        bot.owner ===
+                        req.session.user.username
+                );
+
+        res.render(
+            'index',
+            {
+
+                currentUser:
+                    req.session.user.username,
+
+                isAdmin,
+
+                bots,
+
+                allUsers:
+                    db.users,
+
+                availableScripts: [
+                    'Welcome',
+                    'bot',
+                    'Tickets',
+                    'Protection'
+                ],
+
+                embed:
+                    embedData
+            }
+        );
+    }
+);
+
+// ======================================================
+// LOGIN PAGE
+// ======================================================
+
+app.get(
+    '/login',
+    (req, res) => {
+
+        if (
+            req.session.user
+        ) {
+
+            return res.redirect(
+                '/'
+            );
+        }
+
+        res.render(
             'login',
             {
                 error: null,
@@ -371,163 +1148,116 @@ app.get('/', (req, res) => {
             }
         );
     }
-
-    const db = getDB();
-
-    const isAdmin =
-        Boolean(
-            req.session.user.isAdmin
-        );
-
-    const bots =
-        isAdmin
-            ? db.bots
-            : db.bots.filter(
-                bot =>
-                    bot.owner ===
-                    req.session.user.username
-            );
-
-    res.render(
-        'index',
-        {
-
-            currentUser:
-                req.session.user.username,
-
-            isAdmin,
-
-            bots,
-
-            allUsers:
-                db.users,
-
-            availableScripts: [
-                'Welcome',
-                'bot',
-                'Tickets',
-                'Protection'
-            ],
-
-            embed:
-                embedData
-        }
-    );
-});
-
-// ======================================================
-// LOGIN PAGE
-// ======================================================
-
-app.get('/login', (req, res) => {
-
-    if (req.session.user) {
-        return res.redirect('/');
-    }
-
-    res.render(
-        'login',
-        {
-            error: null,
-            embed: embedData
-        }
-    );
-});
+);
 
 // ======================================================
 // NORMAL LOGIN
 // ======================================================
 
-app.post('/login', (req, res) => {
+app.post(
+    '/login',
+    (req, res) => {
 
-    const db = getDB();
+        const db =
+            getDB();
 
-    const username =
-        String(
-            req.body.username || ''
-        ).trim();
+        const username =
+            String(
+                req.body.username || ''
+            ).trim();
 
-    const password =
-        String(
-            req.body.password || ''
-        );
+        const password =
+            String(
+                req.body.password || ''
+            );
 
-    const user =
-        db.users.find(
-            u =>
-                u.username ===
-                username &&
-                u.password ===
-                password
-        );
+        const user =
+            db.users.find(
+                u =>
+                    u.username ===
+                        username &&
+                    u.password ===
+                        password
+            );
 
-    if (!user) {
+        if (!user) {
 
-        return res.render(
-            'login',
-            {
-                error:
-                    'بيانات الدخول غير صحيحة',
+            return res.render(
+                'login',
+                {
 
-                embed:
-                    embedData
-            }
-        );
-    }
+                    error:
+                        'بيانات الدخول غير صحيحة',
 
-    if (
-        user.email &&
-        user.emailVerified === false
-    ) {
-
-        return res.render(
-            'login',
-            {
-                error:
-                    'يجب تأكيد بريدك الإلكتروني أولاً.',
-
-                embed:
-                    embedData
-            }
-        );
-    }
-
-    req.session.user = {
-
-        username:
-            user.username,
-
-        isAdmin:
-            Boolean(
-                user.isAdmin
-            )
-    };
-
-    req.session.save(
-        () => {
-            res.redirect('/');
+                    embed:
+                        embedData
+                }
+            );
         }
-    );
-});
+
+        if (
+            user.email &&
+            user.emailVerified === false
+        ) {
+
+            return res.render(
+                'login',
+                {
+
+                    error:
+                        'يجب تأكيد بريدك الإلكتروني أولاً.',
+
+                    embed:
+                        embedData
+                }
+            );
+        }
+
+        req.session.user = {
+
+            username:
+                user.username,
+
+            isAdmin:
+                Boolean(
+                    user.isAdmin
+                )
+        };
+
+        req.session.save(
+            () => {
+                res.redirect('/');
+            }
+        );
+    }
+);
 
 // ======================================================
 // REGISTER PAGE
 // ======================================================
 
-app.get('/register', (req, res) => {
+app.get(
+    '/register',
+    (req, res) => {
 
-    if (req.session.user) {
-        return res.redirect('/');
-    }
+        if (
+            req.session.user
+        ) {
 
-    res.render(
-        'register',
-        {
-            error: null,
-            embed: embedData
+            return res.redirect(
+                '/'
+            );
         }
-    );
-});
+
+        res.render(
+            'register',
+            {
+                error: null,
+                embed: embedData
+            }
+        );
+    }
+);
 
 // ======================================================
 // REGISTER
@@ -537,7 +1267,8 @@ app.post(
     '/register',
     async (req, res) => {
 
-        const db = getDB();
+        const db =
+            getDB();
 
         const username =
             String(
@@ -565,6 +1296,7 @@ app.post(
             return res.render(
                 'register',
                 {
+
                     error:
                         'يرجى تعبئة جميع البيانات',
 
@@ -582,6 +1314,7 @@ app.post(
             return res.render(
                 'register',
                 {
+
                     error:
                         'يرجى إدخال بريد إلكتروني صحيح',
 
@@ -598,6 +1331,7 @@ app.post(
             return res.render(
                 'register',
                 {
+
                     error:
                         'كلمة المرور يجب أن تكون 6 أحرف على الأقل',
 
@@ -619,6 +1353,7 @@ app.post(
             return res.render(
                 'register',
                 {
+
                     error:
                         'اسم المستخدم موجود مسبقاً',
 
@@ -641,6 +1376,7 @@ app.post(
             return res.render(
                 'register',
                 {
+
                     error:
                         'هذا البريد الإلكتروني مستخدم مسبقاً',
 
@@ -662,11 +1398,15 @@ app.post(
             password,
 
             codeHash:
-                hashCode(code),
+                hashCode(
+                    code
+                ),
 
             expiresAt:
                 Date.now() +
-                10 * 60 * 1000,
+                10 *
+                60 *
+                1000,
 
             lastSentAt:
                 Date.now()
@@ -703,6 +1443,7 @@ app.post(
             res.render(
                 'verify',
                 {
+
                     error: null,
 
                     email,
@@ -745,9 +1486,12 @@ app.get(
     (req, res) => {
 
         const pending =
-            getPendingRegistration(req);
+            getPendingRegistration(
+                req
+            );
 
         if (!pending) {
+
             return res.redirect(
                 '/register'
             );
@@ -778,7 +1522,9 @@ app.post(
     (req, res) => {
 
         const pending =
-            getPendingRegistration(req);
+            getPendingRegistration(
+                req
+            );
 
         const code =
             String(
@@ -786,6 +1532,7 @@ app.post(
             ).trim();
 
         if (!pending) {
+
             return res.redirect(
                 '/register'
             );
@@ -815,7 +1562,7 @@ app.post(
         if (
             !/^\d{6}$/.test(code) ||
             hashCode(code) !==
-            pending.codeHash
+                pending.codeHash
         ) {
 
             return res.render(
@@ -855,7 +1602,9 @@ app.post(
                 true
         });
 
-        saveDB(db);
+        saveDB(
+            db
+        );
 
         req.session.user = {
 
@@ -886,9 +1635,12 @@ app.post(
     async (req, res) => {
 
         const pending =
-            getPendingRegistration(req);
+            getPendingRegistration(
+                req
+            );
 
         if (!pending) {
+
             return res.redirect(
                 '/register'
             );
@@ -925,11 +1677,15 @@ app.post(
             makeCode();
 
         pending.codeHash =
-            hashCode(code);
+            hashCode(
+                code
+            );
 
         pending.expiresAt =
             Date.now() +
-            10 * 60 * 1000;
+            10 *
+            60 *
+            1000;
 
         pending.lastSentAt =
             Date.now();
@@ -1000,7 +1756,10 @@ app.post(
             !req.session.user ||
             !req.session.user.isAdmin
         ) {
-            return res.redirect('/');
+
+            return res.redirect(
+                '/'
+            );
         }
 
         const db =
@@ -1015,14 +1774,500 @@ app.post(
                     .randomBytes(8)
                     .toString('hex'),
 
+            status:
+                'متوقف',
+
             createdAt:
                 new Date()
                     .toISOString()
         });
 
-        saveDB(db);
+        saveDB(
+            db
+        );
 
-        res.redirect('/');
+        res.redirect(
+            '/'
+        );
+    }
+);
+
+// ======================================================
+// START BOT
+// ======================================================
+
+app.post(
+    '/start/:id',
+    async (req, res) => {
+
+        try {
+
+            if (
+                !req.session.user
+            ) {
+
+                return res.status(
+                    401
+                ).json({
+
+                    success:
+                        false,
+
+                    message:
+                        'يجب تسجيل الدخول أولاً.'
+                });
+            }
+
+            const db =
+                getDB();
+
+            const bot =
+                db.bots.find(
+                    b =>
+                        b.id ===
+                        req.params.id
+                );
+
+            if (!bot) {
+
+                return res.status(
+                    404
+                ).json({
+
+                    success:
+                        false,
+
+                    message:
+                        'البوت غير موجود.'
+                });
+            }
+
+            if (
+                !req.session.user.isAdmin &&
+                bot.owner !==
+                    req.session.user.username
+            ) {
+
+                return res.status(
+                    403
+                ).json({
+
+                    success:
+                        false,
+
+                    message:
+                        'ليس لديك صلاحية لتشغيل هذا البوت.'
+                });
+            }
+
+            if (
+                runningBots.has(
+                    bot.id
+                )
+            ) {
+
+                updateBotStatus(
+                    bot.id,
+                    'يعمل'
+                );
+
+                return res.json({
+
+                    success:
+                        true,
+
+                    message:
+                        'البوت يعمل بالفعل.',
+
+                    status:
+                        'يعمل'
+                });
+            }
+
+            const started =
+                await startManagedBot(
+                    bot
+                );
+
+            if (!started) {
+
+                updateBotStatus(
+                    bot.id,
+                    'متوقف'
+                );
+
+                return res.status(
+                    500
+                ).json({
+
+                    success:
+                        false,
+
+                    message:
+                        'تعذر تشغيل البوت.'
+                });
+            }
+
+            return res.json({
+
+                success:
+                    true,
+
+                message:
+                    'تم تشغيل البوت بنجاح.',
+
+                status:
+                    'يعمل'
+            });
+
+        } catch (error) {
+
+            console.error(
+                '[START BOT ERROR]',
+                error
+            );
+
+            return res.status(
+                500
+            ).json({
+
+                success:
+                    false,
+
+                message:
+                    'حدث خطأ أثناء تشغيل البوت.'
+            });
+        }
+    }
+);
+
+// ======================================================
+// STOP BOT
+// ======================================================
+
+app.post(
+    '/stop/:id',
+    async (req, res) => {
+
+        try {
+
+            if (
+                !req.session.user
+            ) {
+
+                return res.status(
+                    401
+                ).json({
+
+                    success:
+                        false,
+
+                    message:
+                        'يجب تسجيل الدخول أولاً.'
+                });
+            }
+
+            const db =
+                getDB();
+
+            const bot =
+                db.bots.find(
+                    b =>
+                        b.id ===
+                        req.params.id
+                );
+
+            if (!bot) {
+
+                return res.status(
+                    404
+                ).json({
+
+                    success:
+                        false,
+
+                    message:
+                        'البوت غير موجود.'
+                });
+            }
+
+            if (
+                !req.session.user.isAdmin &&
+                bot.owner !==
+                    req.session.user.username
+            ) {
+
+                return res.status(
+                    403
+                ).json({
+
+                    success:
+                        false,
+
+                    message:
+                        'ليس لديك صلاحية لإيقاف هذا البوت.'
+                });
+            }
+
+            const stopped =
+                await stopManagedBot(
+                    bot.id
+                );
+
+            if (!stopped) {
+
+                return res.status(
+                    500
+                ).json({
+
+                    success:
+                        false,
+
+                    message:
+                        'تعذر إيقاف البوت.'
+                });
+            }
+
+            return res.json({
+
+                success:
+                    true,
+
+                message:
+                    'تم إيقاف البوت.',
+
+                status:
+                    'متوقف'
+            });
+
+        } catch (error) {
+
+            console.error(
+                '[STOP BOT ERROR]',
+                error
+            );
+
+            return res.status(
+                500
+            ).json({
+
+                success:
+                    false,
+
+                message:
+                    'حدث خطأ أثناء إيقاف البوت.'
+            });
+        }
+    }
+);
+
+// ======================================================
+// RESTART BOT
+// ======================================================
+
+app.post(
+    '/restart/:id',
+    async (req, res) => {
+
+        try {
+
+            if (
+                !req.session.user
+            ) {
+
+                return res.status(
+                    401
+                ).json({
+
+                    success:
+                        false,
+
+                    message:
+                        'يجب تسجيل الدخول أولاً.'
+                });
+            }
+
+            const db =
+                getDB();
+
+            const bot =
+                db.bots.find(
+                    b =>
+                        b.id ===
+                        req.params.id
+                );
+
+            if (!bot) {
+
+                return res.status(
+                    404
+                ).json({
+
+                    success:
+                        false,
+
+                    message:
+                        'البوت غير موجود.'
+                });
+            }
+
+            if (
+                !req.session.user.isAdmin &&
+                bot.owner !==
+                    req.session.user.username
+            ) {
+
+                return res.status(
+                    403
+                ).json({
+
+                    success:
+                        false,
+
+                    message:
+                        'ليس لديك صلاحية لإعادة تشغيل هذا البوت.'
+                });
+            }
+
+            await stopManagedBot(
+                bot.id
+            );
+
+            await new Promise(
+                resolve =>
+                    setTimeout(
+                        resolve,
+                        1000
+                    )
+            );
+
+            const started =
+                await startManagedBot(
+                    bot
+                );
+
+            if (!started) {
+
+                return res.status(
+                    500
+                ).json({
+
+                    success:
+                        false,
+
+                    message:
+                        'تعذر إعادة تشغيل البوت.'
+                });
+            }
+
+            return res.json({
+
+                success:
+                    true,
+
+                message:
+                    'تم إعادة تشغيل البوت.',
+
+                status:
+                    'يعمل'
+            });
+
+        } catch (error) {
+
+            console.error(
+                '[RESTART BOT ERROR]',
+                error
+            );
+
+            return res.status(
+                500
+            ).json({
+
+                success:
+                    false,
+
+                message:
+                    'حدث خطأ أثناء إعادة تشغيل البوت.'
+            });
+        }
+    }
+);
+
+// ======================================================
+// BOT STATUS
+// ======================================================
+
+app.get(
+    '/bot/:id/status',
+    (req, res) => {
+
+        if (
+            !req.session.user
+        ) {
+
+            return res.status(
+                401
+            ).json({
+
+                success:
+                    false
+            });
+        }
+
+        const db =
+            getDB();
+
+        const bot =
+            db.bots.find(
+                b =>
+                    b.id ===
+                    req.params.id
+            );
+
+        if (!bot) {
+
+            return res.status(
+                404
+            ).json({
+
+                success:
+                    false,
+
+                message:
+                    'البوت غير موجود.'
+            });
+        }
+
+        if (
+            !req.session.user.isAdmin &&
+            bot.owner !==
+                req.session.user.username
+        ) {
+
+            return res.status(
+                403
+            ).json({
+
+                success:
+                    false
+            });
+        }
+
+        return res.json({
+
+            success:
+                true,
+
+            status:
+                runningBots.has(
+                    bot.id
+                )
+                    ? 'يعمل'
+                    : (
+                        bot.status ||
+                        'متوقف'
+                    )
+        });
     }
 );
 
@@ -1036,6 +2281,7 @@ app.get(
 
         req.session.destroy(
             () => {
+
                 res.redirect(
                     '/login'
                 );
@@ -1051,7 +2297,12 @@ app.get(
 app.get(
     '/health',
     (req, res) => {
-        res.status(200).send('OK');
+
+        res.status(
+            200
+        ).send(
+            'OK'
+        );
     }
 );
 
@@ -1063,7 +2314,9 @@ const discordLoginTickets =
     new Map();
 
 const DISCORD_LOGIN_TICKET_TTL =
-    5 * 60 * 1000;
+    5 *
+    60 *
+    1000;
 
 function createDiscordLoginTicket(
     user
@@ -1082,7 +2335,8 @@ function createDiscordLoginTicket(
                 user.username,
 
             discordId:
-                user.discordId || null,
+                user.discordId ||
+                null,
 
             expiresAt:
                 Date.now() +
@@ -1114,6 +2368,7 @@ function consumeDiscordLoginTicket(
         Date.now() >
         data.expiresAt
     ) {
+
         return null;
     }
 
@@ -1131,8 +2386,7 @@ setInterval(
                 ticket,
                 data
             ]
-            of discordLoginTickets
-                .entries()
+            of discordLoginTickets.entries()
         ) {
 
             if (
@@ -1140,8 +2394,9 @@ setInterval(
                 data.expiresAt
             ) {
 
-                discordLoginTickets
-                    .delete(ticket);
+                discordLoginTickets.delete(
+                    ticket
+                );
             }
         }
 
@@ -1159,7 +2414,8 @@ app.get(
 
         const ticket =
             String(
-                req.query.ticket || ''
+                req.query.ticket ||
+                ''
             ).trim();
 
         if (!ticket) {
@@ -1257,7 +2513,7 @@ app.listen(
 );
 
 // ======================================================
-// DISCORD CLIENT
+// MAIN DISCORD CLIENT
 // ======================================================
 
 const client =
@@ -1272,128 +2528,6 @@ const client =
             GatewayIntentBits.MessageContent
         ]
     });
-
-// ======================================================
-// BOT MANAGER
-// ======================================================
-
-const runningBots = new Map();
-
-async function startManagedBot(bot) {
-    if (!bot || !bot.token) {
-        return false;
-    }
-
-    // إذا كان شغال بالفعل
-    if (runningBots.has(bot.id)) {
-        return true;
-    }
-
-    try {
-        const botClient = new Client({
-            intents: [
-                GatewayIntentBits.Guilds,
-                GatewayIntentBits.GuildMembers,
-                GatewayIntentBits.GuildModeration,
-                GatewayIntentBits.GuildMessages,
-                GatewayIntentBits.MessageContent
-            ]
-        });
-
-        // ==========================================
-        // PROTECTION BOT
-        // ==========================================
-
-        if (
-            String(bot.type).toLowerCase() === 'protection'
-        ) {
-
-            botClient.on('ready', () => {
-
-                console.log(
-                    `🛡️ Protection Bot "${bot.name}" is online as ${botClient.user.tag}`
-                );
-
-                updateBotStatus(
-                    bot.id,
-                    'يعمل'
-                );
-            });
-
-            // هنا نحط أنظمة الحماية الخاصة بالبوت
-            setupProtectionBot(botClient, bot);
-        }
-
-        // ==========================================
-        // WELCOME BOT
-        // ==========================================
-
-        if (
-            String(bot.type).toLowerCase() === 'welcome'
-        ) {
-
-            botClient.on('ready', () => {
-
-                console.log(
-                    `👋 Welcome Bot "${bot.name}" is online as ${botClient.user.tag}`
-                );
-
-                updateBotStatus(
-                    bot.id,
-                    'يعمل'
-                );
-            });
-
-            setupWelcomeBot(botClient, bot);
-        }
-
-        // ==========================================
-        // TICKETS BOT
-        // ==========================================
-
-        if (
-            String(bot.type).toLowerCase() === 'tickets'
-        ) {
-
-            botClient.on('ready', () => {
-
-                console.log(
-                    `🎫 Tickets Bot "${bot.name}" is online as ${botClient.user.tag}`
-                );
-
-                updateBotStatus(
-                    bot.id,
-                    'يعمل'
-                );
-            });
-
-            setupTicketsBot(botClient, bot);
-        }
-
-        await botClient.login(bot.token);
-
-        runningBots.set(
-            bot.id,
-            botClient
-        );
-
-        return true;
-
-    } catch (error) {
-
-        console.error(
-            `❌ Failed to start bot ${bot.name}:`,
-            error.message
-        );
-
-        updateBotStatus(
-            bot.id,
-            'متوقف'
-        );
-
-        return false;
-    }
-}
 
 // ======================================================
 // PENDING DISCORD VERIFICATIONS
@@ -1489,6 +2623,7 @@ client.on(
                 );
 
         await message.channel.send({
+
             embeds: [
                 embed
             ],
@@ -1514,17 +2649,17 @@ client.on(
     'interactionCreate',
     async interaction => {
 
-        // ==========================================
+        // ==================================================
         // BUTTONS
-        // ==========================================
+        // ==================================================
 
         if (
             interaction.isButton()
         ) {
 
-            // ==========================================
+            // ------------------------------------------
             // REGISTER
-            // ==========================================
+            // ------------------------------------------
 
             if (
                 interaction.customId ===
@@ -1622,9 +2757,9 @@ client.on(
                 );
             }
 
-            // ==========================================
+            // ------------------------------------------
             // LOGIN
-            // ==========================================
+            // ------------------------------------------
 
             if (
                 interaction.customId ===
@@ -1674,9 +2809,9 @@ client.on(
                 );
             }
 
-            // ==========================================
-            // REGISTER VERIFY BUTTON
-            // ==========================================
+            // ------------------------------------------
+            // REGISTER VERIFY
+            // ------------------------------------------
 
             if (
                 interaction.customId ===
@@ -1684,10 +2819,9 @@ client.on(
             ) {
 
                 const pending =
-                    discordPendingRegistrations
-                        .get(
-                            interaction.user.id
-                        );
+                    discordPendingRegistrations.get(
+                        interaction.user.id
+                    );
 
                 if (!pending) {
 
@@ -1706,10 +2840,9 @@ client.on(
                     pending.expiresAt
                 ) {
 
-                    discordPendingRegistrations
-                        .delete(
-                            interaction.user.id
-                        );
+                    discordPendingRegistrations.delete(
+                        interaction.user.id
+                    );
 
                     return interaction.reply({
 
@@ -1764,6 +2897,7 @@ client.on(
                         );
 
                 modal.addComponents(
+
                     new ActionRowBuilder()
                         .addComponents(
                             code
@@ -1775,9 +2909,9 @@ client.on(
                 );
             }
 
-            // ==========================================
-            // LOGIN VERIFY BUTTON
-            // ==========================================
+            // ------------------------------------------
+            // LOGIN VERIFY
+            // ------------------------------------------
 
             if (
                 interaction.customId ===
@@ -1785,10 +2919,9 @@ client.on(
             ) {
 
                 const pending =
-                    discordPendingLogins
-                        .get(
-                            interaction.user.id
-                        );
+                    discordPendingLogins.get(
+                        interaction.user.id
+                    );
 
                 if (!pending) {
 
@@ -1845,6 +2978,7 @@ client.on(
                         );
 
                 modal.addComponents(
+
                     new ActionRowBuilder()
                         .addComponents(
                             code
@@ -1857,17 +2991,17 @@ client.on(
             }
         }
 
-        // ==========================================
+        // ==================================================
         // MODALS
-        // ==========================================
+        // ==================================================
 
         if (
             interaction.isModalSubmit()
         ) {
 
-            // ==========================================
-            // REGISTER MODAL
-            // ==========================================
+            // ------------------------------------------
+            // REGISTER
+            // ------------------------------------------
 
             if (
                 interaction.customId ===
@@ -1971,27 +3105,30 @@ client.on(
                 const code =
                     makeCode();
 
-                discordPendingRegistrations
-                    .set(
-                        interaction.user.id,
-                        {
+                discordPendingRegistrations.set(
 
-                            username,
+                    interaction.user.id,
 
-                            email,
+                    {
 
-                            password,
+                        username,
 
-                            codeHash:
-                                hashCode(
-                                    code
-                                ),
+                        email,
 
-                            expiresAt:
-                                Date.now() +
-                                10 * 60 * 1000
-                        }
-                    );
+                        password,
+
+                        codeHash:
+                            hashCode(
+                                code
+                            ),
+
+                        expiresAt:
+                            Date.now() +
+                            10 *
+                            60 *
+                            1000
+                    }
+                );
 
                 try {
 
@@ -2050,10 +3187,9 @@ ${code}
                         error
                     );
 
-                    discordPendingRegistrations
-                        .delete(
-                            interaction.user.id
-                        );
+                    discordPendingRegistrations.delete(
+                        interaction.user.id
+                    );
 
                     return interaction.reply({
 
@@ -2066,9 +3202,9 @@ ${code}
                 }
             }
 
-            // ==========================================
+            // ------------------------------------------
             // VERIFY REGISTER
-            // ==========================================
+            // ------------------------------------------
 
             if (
                 interaction.customId ===
@@ -2083,10 +3219,9 @@ ${code}
                         .trim();
 
                 const pending =
-                    discordPendingRegistrations
-                        .get(
-                            interaction.user.id
-                        );
+                    discordPendingRegistrations.get(
+                        interaction.user.id
+                    );
 
                 if (!pending) {
 
@@ -2105,10 +3240,9 @@ ${code}
                     pending.expiresAt
                 ) {
 
-                    discordPendingRegistrations
-                        .delete(
-                            interaction.user.id
-                        );
+                    discordPendingRegistrations.delete(
+                        interaction.user.id
+                    );
 
                     return interaction.reply({
 
@@ -2121,10 +3255,9 @@ ${code}
                 }
 
                 if (
-                    !/^\d{6}$/
-                        .test(
-                            enteredCode
-                        )
+                    !/^\d{6}$/.test(
+                        enteredCode
+                    )
                 ) {
 
                     return interaction.reply({
@@ -2178,12 +3311,13 @@ ${code}
                         interaction.user.id
                 });
 
-                saveDB(db);
+                saveDB(
+                    db
+                );
 
-                discordPendingRegistrations
-                    .delete(
-                        interaction.user.id
-                    );
+                discordPendingRegistrations.delete(
+                    interaction.user.id
+                );
 
                 return interaction.reply({
 
@@ -2195,9 +3329,9 @@ ${code}
                 });
             }
 
-            // ==========================================
-            // LOGIN MODAL
-            // ==========================================
+            // ------------------------------------------
+            // LOGIN
+            // ------------------------------------------
 
             if (
                 interaction.customId ===
@@ -2239,24 +3373,27 @@ ${code}
                 const code =
                     makeCode();
 
-                discordPendingLogins
-                    .set(
-                        interaction.user.id,
-                        {
+                discordPendingLogins.set(
 
-                            username:
-                                user.username,
+                    interaction.user.id,
 
-                            codeHash:
-                                hashCode(
-                                    code
-                                ),
+                    {
 
-                            expiresAt:
-                                Date.now() +
-                                10 * 60 * 1000
-                        }
-                    );
+                        username:
+                            user.username,
+
+                        codeHash:
+                            hashCode(
+                                code
+                            ),
+
+                        expiresAt:
+                            Date.now() +
+                            10 *
+                            60 *
+                            1000
+                    }
+                );
 
                 try {
 
@@ -2326,9 +3463,9 @@ ${code}
                 }
             }
 
-            // ==========================================
+            // ------------------------------------------
             // VERIFY LOGIN
-            // ==========================================
+            // ------------------------------------------
 
             if (
                 interaction.customId ===
@@ -2343,10 +3480,9 @@ ${code}
                         .trim();
 
                 const pending =
-                    discordPendingLogins
-                        .get(
-                            interaction.user.id
-                        );
+                    discordPendingLogins.get(
+                        interaction.user.id
+                    );
 
                 if (!pending) {
 
@@ -2365,10 +3501,9 @@ ${code}
                     pending.expiresAt
                 ) {
 
-                    discordPendingLogins
-                        .delete(
-                            interaction.user.id
-                        );
+                    discordPendingLogins.delete(
+                        interaction.user.id
+                    );
 
                     return interaction.reply({
 
@@ -2381,6 +3516,9 @@ ${code}
                 }
 
                 if (
+                    !/^\d{6}$/.test(
+                        enteredCode
+                    ) ||
                     hashCode(
                         enteredCode
                     ) !==
@@ -2397,10 +3535,9 @@ ${code}
                     });
                 }
 
-                discordPendingLogins
-                    .delete(
-                        interaction.user.id
-                    );
+                discordPendingLogins.delete(
+                    interaction.user.id
+                );
 
                 const db =
                     getDB();
@@ -2478,10 +3615,12 @@ ${code}
 );
 
 // ======================================================
-// PRIVATE ADMIN PANEL
+// ADMIN HELPERS
 // ======================================================
 
-function isAdminUser(interaction) {
+function isAdminUser(
+    interaction
+) {
 
     return (
         interaction.user &&
@@ -2498,7 +3637,9 @@ function getAdminUsers() {
     return db.users;
 }
 
-function getUserBots(username) {
+function getUserBots(
+    username
+) {
 
     const db =
         getDB();
@@ -2531,7 +3672,6 @@ client.on(
             return;
         }
 
-        // أنت فقط
         if (
             message.author.id !==
             ADMIN_DISCORD_ID
@@ -2621,11 +3761,8 @@ client.on(
 
         if (
             interaction.customId &&
-            (
-                interaction.customId
-                    .startsWith(
-                        'admin_'
-                    )
+            interaction.customId.startsWith(
+                'admin_'
             )
         ) {
 
@@ -2804,7 +3941,7 @@ client.on(
         }
 
         // ==================================================
-        // اختيار الحساب من القائمة
+        // اختيار الحساب
         // ==================================================
 
         if (
@@ -2922,10 +4059,9 @@ client.on(
 
         if (
             interaction.isButton() &&
-            interaction.customId
-                .startsWith(
-                    'admin_add_'
-                )
+            interaction.customId.startsWith(
+                'admin_add_'
+            )
         ) {
 
             const index =
@@ -3064,10 +4200,9 @@ client.on(
 
         if (
             interaction.isButton() &&
-            interaction.customId
-                .startsWith(
-                    'admin_list_'
-                )
+            interaction.customId.startsWith(
+                'admin_list_'
+            )
         ) {
 
             const index =
@@ -3153,10 +4288,9 @@ client.on(
 
         if (
             interaction.isModalSubmit() &&
-            interaction.customId
-                .startsWith(
-                    'admin_add_modal_'
-                )
+            interaction.customId.startsWith(
+                'admin_add_modal_'
+            )
         ) {
 
             const index =
@@ -3226,7 +4360,7 @@ client.on(
             const db =
                 getDB();
 
-            db.bots.push({
+            const newBot = {
 
                 id:
                     crypto
@@ -3247,19 +4381,25 @@ client.on(
                     null,
 
                 status:
-                    'مضاف',
+                    'متوقف',
 
                 createdAt:
                     new Date()
                         .toISOString()
-            });
+            };
 
-            saveDB(db);
+            db.bots.push(
+                newBot
+            );
+
+            saveDB(
+                db
+            );
 
             return interaction.reply({
 
                 content:
-                    `✅ تم إضافة البوت **${name}** وربطه بحساب **${user.username}**.\n\n📦 النوع: ${type}\n🟢 الحالة: مضاف`,
+                    `✅ تم إضافة البوت **${name}** وربطه بحساب **${user.username}**.\n\n📦 النوع: ${type}\n🔴 الحالة: متوقف`,
 
                 ephemeral:
                     true
@@ -3312,3 +4452,4 @@ if (!discordToken) {
             }
         );
 }
+```
