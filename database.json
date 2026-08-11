@@ -15,5 +15,15 @@
       "owner": "abusaud",
       "status": "offline"
     }
+  ],
+    "bots": [
+    {
+      "id": "1536865254548701187",
+      "name": "Protection Abusaud",
+      "token": "MTUzNjg2NTI1NDU0ODcwMTE4Nw.GGoTnt.Zk4e7AgI4oAu3TqHb3OjGaPa8xJblxhLN8mOEY",
+      "script": "Protection",
+      "owner": "abusaud",
+      "status": "offline"
+    }
   ]
 }
