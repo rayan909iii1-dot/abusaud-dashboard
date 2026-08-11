@@ -1,4 +1,4 @@
-```js
+js
 const express = require('express');
 const session = require('express-session');
 const nodemailer = require('nodemailer');
@@ -4450,4 +4450,4 @@ process.on(
         // حتى لا يسقط الموقع بسبب بوت فرعي.
     }
 );
-```
+
