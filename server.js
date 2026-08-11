@@ -83,7 +83,6 @@ function getDB() {
                     emailVerified: true
                 }
             ],
-
             bots: []
         };
 
@@ -262,7 +261,7 @@ function pendingUser(req) {
 }
 
 // ==========================================
-// Embed Data
+// Embed
 // ==========================================
 
 const embedData = {
@@ -324,7 +323,7 @@ app.get('/', (req, res) => {
 });
 
 // ==========================================
-// Normal Login
+// Login
 // ==========================================
 
 app.get('/login', (req, res) => {
@@ -368,7 +367,7 @@ app.post('/login', (req, res) => {
     ) {
         return res.render('login', {
             error:
-                'يجب تأكيد بريدك الإلكتروني أولاً. أنشئ الحساب من جديد لإرسال كود التحقق.',
+                'يجب تأكيد بريدك الإلكتروني أولاً.',
 
             embed: embedData
         });
@@ -376,9 +375,7 @@ app.post('/login', (req, res) => {
 
     req.session.user = {
         username: user.username,
-
-        isAdmin:
-            Boolean(user.isAdmin)
+        isAdmin: Boolean(user.isAdmin)
     };
 
     req.session.save(() => {
@@ -425,9 +422,7 @@ app.post('/register', async (req, res) => {
     }
 
     if (
-        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-            email
-        )
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
     ) {
         return res.render('register', {
             error:
@@ -569,12 +564,8 @@ app.get('/verify-email', (req, res) => {
 
     res.render('verify', {
         error: null,
-
-        email:
-            pending.email,
-
-        embed:
-            embedData
+        email: pending.email,
+        embed: embedData
     });
 });
 
@@ -583,51 +574,37 @@ app.post('/verify-email', (req, res) => {
         pendingUser(req);
 
     const code =
-        String(
-            req.body.code || ''
-        ).trim();
+        String(req.body.code || '').trim();
 
     if (!pending) {
         return res.redirect('/register');
     }
 
-    if (
-        Date.now() >
-        pending.expiresAt
-    ) {
-        delete req.session
-            .pendingRegistration;
+    if (Date.now() > pending.expiresAt) {
+        delete req.session.pendingRegistration;
 
-        return res.render(
-            'register',
-            {
-                error:
-                    'انتهت صلاحية الكود. أعد التسجيل للحصول على كود جديد.',
+        return res.render('register', {
+            error:
+                'انتهت صلاحية الكود. أعد التسجيل للحصول على كود جديد.',
 
-                embed:
-                    embedData
-            }
-        );
+            embed: embedData
+        });
     }
 
     if (
         !/^\d{6}$/.test(code) ||
-        hashCode(code) !==
-        pending.codeHash
+        hashCode(code) !== pending.codeHash
     ) {
-        return res.render(
-            'verify',
-            {
-                error:
-                    'كود التحقق غير صحيح',
+        return res.render('verify', {
+            error:
+                'كود التحقق غير صحيح',
 
-                email:
-                    pending.email,
+            email:
+                pending.email,
 
-                embed:
-                    embedData
-            }
-        );
+            embed:
+                embedData
+        });
     }
 
     const db = getDB();
@@ -639,19 +616,14 @@ app.post('/verify-email', (req, res) => {
                 pending.username.toLowerCase()
         )
     ) {
-        delete req.session
-            .pendingRegistration;
+        delete req.session.pendingRegistration;
 
-        return res.render(
-            'register',
-            {
-                error:
-                    'اسم المستخدم أصبح مستخدماً بالفعل',
+        return res.render('register', {
+            error:
+                'اسم المستخدم أصبح مستخدماً بالفعل',
 
-                embed:
-                    embedData
-            }
-        );
+            embed: embedData
+        });
     }
 
     if (
@@ -662,19 +634,14 @@ app.post('/verify-email', (req, res) => {
                 pending.email
         )
     ) {
-        delete req.session
-            .pendingRegistration;
+        delete req.session.pendingRegistration;
 
-        return res.render(
-            'register',
-            {
-                error:
-                    'البريد الإلكتروني أصبح مستخدماً بالفعل',
+        return res.render('register', {
+            error:
+                'البريد الإلكتروني أصبح مستخدماً بالفعل',
 
-                embed:
-                    embedData
-            }
-        );
+            embed: embedData
+        });
     }
 
     db.users.push({
@@ -704,8 +671,7 @@ app.post('/verify-email', (req, res) => {
             false
     };
 
-    delete req.session
-        .pendingRegistration;
+    delete req.session.pendingRegistration;
 
     req.session.save(() => {
         res.redirect('/');
@@ -734,39 +700,20 @@ app.post(
             );
 
         if (wait > 0) {
-            return res.render(
-                'verify',
-                {
-                    error:
-                        `انتظر ${Math.ceil(wait / 1000)} ثانية قبل إعادة إرسال الكود.`,
+            return res.render('verify', {
+                error:
+                    `انتظر ${Math.ceil(wait / 1000)} ثانية قبل إعادة إرسال الكود.`,
 
-                    email:
-                        pending.email,
+                email:
+                    pending.email,
 
-                    embed:
-                        embedData
-                }
-            );
+                embed:
+                    embedData
+            });
         }
 
         const code =
             makeCode();
-
-        console.log(
-            '========================================'
-        );
-
-        console.log(
-            `[RESEND CODE] For user: ${pending.username} (${pending.email})`
-        );
-
-        console.log(
-            `NEW CODE IS: --> ${code} <--`
-        );
-
-        console.log(
-            '========================================'
-        );
 
         pending.codeHash =
             hashCode(code);
@@ -777,6 +724,10 @@ app.post(
 
         pending.lastSentAt =
             Date.now();
+
+        console.log(
+            `[RESEND CODE] ${pending.username}: ${code}`
+        );
 
         try {
             await Promise.race([
@@ -802,7 +753,7 @@ app.post(
 
             res.render('verify', {
                 error:
-                    'تم إرسال كود جديد إلى بريدك الإلكتروني (ومتوفر في Logs).',
+                    'تم إرسال كود جديد إلى بريدك الإلكتروني.',
 
                 email:
                     pending.email,
@@ -850,7 +801,6 @@ app.post('/add-bot', (req, res) => {
 
     db.bots.push({
         ...req.body,
-
         createdAt:
             new Date().toISOString()
     });
@@ -882,19 +832,15 @@ app.get('/health', (req, res) => {
 // Discord Login Tickets
 // ==========================================
 
-// تذاكر مؤقتة لتسجيل الدخول من Discord
 const discordLoginTickets =
     new Map();
 
 const DISCORD_LOGIN_TICKET_TTL =
     5 * 60 * 1000;
 
-// إنشاء Ticket
 function createDiscordLoginTicket(user) {
     const ticket =
-        crypto
-            .randomBytes(32)
-            .toString('hex');
+        crypto.randomBytes(32).toString('hex');
 
     discordLoginTickets.set(
         ticket,
@@ -914,52 +860,32 @@ function createDiscordLoginTicket(user) {
     return ticket;
 }
 
-// استخدام Ticket
-function consumeDiscordLoginTicket(
-    ticket
-) {
+function consumeDiscordLoginTicket(ticket) {
     const data =
-        discordLoginTickets.get(
-            ticket
-        );
+        discordLoginTickets.get(ticket);
 
     if (!data) {
         return null;
     }
 
-    // استخدام مرة واحدة فقط
-    discordLoginTickets.delete(
-        ticket
-    );
+    discordLoginTickets.delete(ticket);
 
-    if (
-        Date.now() >
-        data.expiresAt
-    ) {
+    if (Date.now() > data.expiresAt) {
         return null;
     }
 
     return data;
 }
 
-// تنظيف التذاكر المنتهية
 setInterval(() => {
-    const now =
-        Date.now();
+    const now = Date.now();
 
     for (
-        const [
-            ticket,
-            data
-        ] of discordLoginTickets.entries()
+        const [ticket, data]
+        of discordLoginTickets.entries()
     ) {
-        if (
-            now >
-            data.expiresAt
-        ) {
-            discordLoginTickets.delete(
-                ticket
-            );
+        if (now > data.expiresAt) {
+            discordLoginTickets.delete(ticket);
         }
     }
 }, 60 * 1000);
@@ -968,85 +894,72 @@ setInterval(() => {
 // Discord Login Route
 // ==========================================
 
-app.get(
-    '/discord-login',
-    (req, res) => {
-        const ticket =
-            String(
-                req.query.ticket || ''
-            ).trim();
+app.get('/discord-login', (req, res) => {
+    const ticket =
+        String(req.query.ticket || '').trim();
 
-        if (!ticket) {
-            return res
-                .status(400)
-                .send(
-                    'رابط تسجيل الدخول غير صالح.'
-                );
-        }
-
-        const ticketData =
-            consumeDiscordLoginTicket(
-                ticket
-            );
-
-        if (!ticketData) {
-            return res
-                .status(401)
-                .send(
-                    'انتهت صلاحية رابط تسجيل الدخول أو تم استخدامه مسبقاً. ارجع إلى Discord واطلب تسجيل دخول جديد.'
-                );
-        }
-
-        const db =
-            getDB();
-
-        const user =
-            db.users.find(
-                u =>
-                    u.username ===
-                    ticketData.username
-            );
-
-        if (!user) {
-            return res
-                .status(404)
-                .send(
-                    'لم يتم العثور على الحساب.'
-                );
-        }
-
-        // إنشاء Session حقيقية للموقع
-        req.session.user = {
-            username:
-                user.username,
-
-            isAdmin:
-                Boolean(user.isAdmin)
-        };
-
-        req.session.save(
-            error => {
-                if (error) {
-                    console.error(
-                        '[Discord Login] Session save error:',
-                        error
-                    );
-
-                    return res
-                        .status(500)
-                        .send(
-                            'تعذر إنشاء جلسة تسجيل الدخول. حاول مرة أخرى.'
-                        );
-                }
-
-                res.redirect('/');
-            }
-        );
+    if (!ticket) {
+        return res
+            .status(400)
+            .send('رابط تسجيل الدخول غير صالح.');
     }
-);
+
+    const ticketData =
+        consumeDiscordLoginTicket(ticket);
+
+    if (!ticketData) {
+        return res
+            .status(401)
+            .send(
+                'انتهت صلاحية رابط تسجيل الدخول أو تم استخدامه مسبقاً. ارجع إلى Discord واطلب تسجيل دخول جديد.'
+            );
+    }
+
+    const db = getDB();
+
+    const user =
+        db.users.find(
+            u =>
+                u.username ===
+                ticketData.username
+        );
+
+    if (!user) {
+        return res
+            .status(404)
+            .send(
+                'لم يتم العثور على الحساب.'
+            );
+    }
+
+    req.session.user = {
+        username:
+            user.username,
+
+        isAdmin:
+            Boolean(user.isAdmin)
+    };
+
+    req.session.save(error => {
+        if (error) {
+            console.error(
+                '[Discord Login] Session save error:',
+                error
+            );
+
+            return res
+                .status(500)
+                .send(
+                    'تعذر إنشاء جلسة تسجيل الدخول. حاول مرة أخرى.'
+                );
+        }
+
+        res.redirect('/');
+    });
+});
 
 // ==========================================
-// تشغيل الموقع
+// Start Website
 // ==========================================
 
 app.listen(
@@ -1071,15 +984,13 @@ const client =
     new Client({
         intents: [
             GatewayIntentBits.Guilds,
-
             GatewayIntentBits.GuildMessages,
-
             GatewayIntentBits.MessageContent
         ]
     });
 
 // ==========================================
-// Discord Pending Data
+// Pending Registrations / Logins
 // ==========================================
 
 const discordPendingRegistrations =
@@ -1092,14 +1003,11 @@ const discordPendingLogins =
 // Bot Ready
 // ==========================================
 
-client.once(
-    'ready',
-    () => {
-        console.log(
-            `Discord Bot logged in as ${client.user.tag}`
-        );
-    }
-);
+client.once('ready', () => {
+    console.log(
+        `Discord Bot logged in as ${client.user.tag}`
+    );
+});
 
 // ==========================================
 // !setup
@@ -1108,16 +1016,13 @@ client.once(
 client.on(
     'messageCreate',
     async message => {
-        if (
-            message.author.bot
-        ) {
+
+        if (message.author.bot) {
             return;
         }
 
-        if (
-            message.content ===
-            '!setup'
-        ) {
+        if (message.content === '!setup') {
+
             const embed =
                 new EmbedBuilder()
                     .setTitle(
@@ -1125,7 +1030,7 @@ client.on(
                     )
 
                     .setDescription(
-                        'انقر على الزر بالأسفل لإنشاء حسابك الجديد أو تسجيل الدخول بكل سهولة وسيتم إرسال كود التحقق الخاص بك على الخاص مباشرة.'
+                        'انقر على الزر بالأسفل لإنشاء حسابك الجديد أو تسجيل الدخول بكل سهولة.'
                     )
 
                     .setColor(
@@ -1163,23 +1068,14 @@ client.on(
                             )
                     );
 
-            await message.channel.send(
-                {
-                    embeds: [
-                        embed
-                    ],
-
-                    components: [
-                        row
-                    ]
-                }
-            );
+            await message.channel.send({
+                embeds: [embed],
+                components: [row]
+            });
 
             await message
                 .delete()
-                .catch(
-                    () => {}
-                );
+                .catch(() => {});
         }
     }
 );
@@ -1196,18 +1092,17 @@ client.on(
         // Buttons
         // ==================================
 
-        if (
-            interaction.isButton()
-        ) {
+        if (interaction.isButton()) {
 
-            // ==============================
-            // Register
-            // ==============================
+            // ==================================
+            // Open Register
+            // ==================================
 
             if (
                 interaction.customId ===
                 'open_register_modal'
             ) {
+
                 const modal =
                     new ModalBuilder()
                         .setCustomId(
@@ -1232,9 +1127,7 @@ client.on(
                             TextInputStyle.Short
                         )
 
-                        .setRequired(
-                            true
-                        );
+                        .setRequired(true);
 
                 const emailInput =
                     new TextInputBuilder()
@@ -1250,9 +1143,7 @@ client.on(
                             TextInputStyle.Short
                         )
 
-                        .setRequired(
-                            true
-                        );
+                        .setRequired(true);
 
                 const passwordInput =
                     new TextInputBuilder()
@@ -1268,9 +1159,7 @@ client.on(
                             TextInputStyle.Short
                         )
 
-                        .setRequired(
-                            true
-                        );
+                        .setRequired(true);
 
                 modal.addComponents(
                     new ActionRowBuilder()
@@ -1294,14 +1183,15 @@ client.on(
                 );
             }
 
-            // ==============================
-            // Login
-            // ==============================
+            // ==================================
+            // Open Login
+            // ==================================
 
             else if (
                 interaction.customId ===
                 'open_login_modal'
             ) {
+
                 const modal =
                     new ModalBuilder()
                         .setCustomId(
@@ -1326,14 +1216,180 @@ client.on(
                             TextInputStyle.Short
                         )
 
-                        .setRequired(
-                            true
-                        );
+                        .setRequired(true);
 
                 modal.addComponents(
                     new ActionRowBuilder()
                         .addComponents(
                             emailInput
+                        )
+                );
+
+                await interaction.showModal(
+                    modal
+                );
+            }
+
+            // ==================================
+            // Register Code Button
+            // ==================================
+
+            else if (
+                interaction.customId ===
+                'open_register_verify'
+            ) {
+
+                const pending =
+                    discordPendingRegistrations.get(
+                        interaction.user.id
+                    );
+
+                if (!pending) {
+                    return interaction.reply({
+                        content:
+                            'لا توجد عملية تسجيل معلقة. ابدأ إنشاء الحساب من جديد.',
+
+                        ephemeral: true
+                    });
+                }
+
+                if (
+                    Date.now() >
+                    pending.expiresAt
+                ) {
+
+                    discordPendingRegistrations.delete(
+                        interaction.user.id
+                    );
+
+                    return interaction.reply({
+                        content:
+                            'انتهت صلاحية الكود. ابدأ التسجيل من جديد.',
+
+                        ephemeral: true
+                    });
+                }
+
+                const modal =
+                    new ModalBuilder()
+                        .setCustomId(
+                            'verify_modal'
+                        )
+
+                        .setTitle(
+                            'تأكيد كود إنشاء الحساب'
+                        );
+
+                const codeInput =
+                    new TextInputBuilder()
+                        .setCustomId(
+                            'verify_code'
+                        )
+
+                        .setLabel(
+                            'أدخل الكود المرسل إلى الخاص'
+                        )
+
+                        .setPlaceholder(
+                            'مثال: 224574'
+                        )
+
+                        .setStyle(
+                            TextInputStyle.Short
+                        )
+
+                        .setMinLength(6)
+                        .setMaxLength(6)
+                        .setRequired(true);
+
+                modal.addComponents(
+                    new ActionRowBuilder()
+                        .addComponents(
+                            codeInput
+                        )
+                );
+
+                await interaction.showModal(
+                    modal
+                );
+            }
+
+            // ==================================
+            // Login Code Button
+            // ==================================
+
+            else if (
+                interaction.customId ===
+                'open_login_verify'
+            ) {
+
+                const pending =
+                    discordPendingLogins.get(
+                        interaction.user.id
+                    );
+
+                if (!pending) {
+                    return interaction.reply({
+                        content:
+                            'لا يوجد تسجيل دخول معلق. اضغط تسجيل الدخول من جديد.',
+
+                        ephemeral: true
+                    });
+                }
+
+                if (
+                    Date.now() >
+                    pending.expiresAt
+                ) {
+
+                    discordPendingLogins.delete(
+                        interaction.user.id
+                    );
+
+                    return interaction.reply({
+                        content:
+                            'انتهت صلاحية الكود. ابدأ تسجيل الدخول من جديد.',
+
+                        ephemeral: true
+                    });
+                }
+
+                const modal =
+                    new ModalBuilder()
+                        .setCustomId(
+                            'login_verify_modal'
+                        )
+
+                        .setTitle(
+                            'تأكيد تسجيل الدخول'
+                        );
+
+                const codeInput =
+                    new TextInputBuilder()
+                        .setCustomId(
+                            'login_verify_code'
+                        )
+
+                        .setLabel(
+                            'أدخل الكود المرسل للخاص'
+                        )
+
+                        .setPlaceholder(
+                            'مثال: 224574'
+                        )
+
+                        .setStyle(
+                            TextInputStyle.Short
+                        )
+
+                        .setMinLength(6)
+                        .setMaxLength(6)
+                        .setRequired(true);
+
+                modal.addComponents(
+                    new ActionRowBuilder()
+                        .addComponents(
+                            codeInput
                         )
                 );
 
@@ -1351,14 +1407,15 @@ client.on(
             interaction.isModalSubmit()
         ) {
 
-            // ==============================
+            // ==================================
             // Register Modal
-            // ==============================
+            // ==================================
 
             if (
                 interaction.customId ===
                 'register_modal'
             ) {
+
                 const username =
                     interaction.fields
                         .getTextInputValue(
@@ -1384,23 +1441,41 @@ client.on(
                     getDB();
 
                 if (
+                    !username ||
+                    !email ||
+                    !password
+                ) {
+                    return interaction.reply({
+                        content:
+                            'يرجى تعبئة جميع البيانات.',
+
+                        ephemeral: true
+                    });
+                }
+
+                if (password.length < 6) {
+                    return interaction.reply({
+                        content:
+                            'كلمة المرور يجب أن تكون 6 أحرف على الأقل.',
+
+                        ephemeral: true
+                    });
+                }
+
+                if (
                     db.users.some(
                         u =>
                             u.username
                                 .toLowerCase() ===
-                            username
-                                .toLowerCase()
+                            username.toLowerCase()
                     )
                 ) {
-                    return interaction.reply(
-                        {
-                            content:
-                                'اسم المستخدم مستخدم مسبقاً!',
+                    return interaction.reply({
+                        content:
+                            'اسم المستخدم مستخدم مسبقاً!',
 
-                            ephemeral:
-                                true
-                        }
-                    );
+                        ephemeral: true
+                    });
                 }
 
                 if (
@@ -1412,15 +1487,12 @@ client.on(
                             email
                     )
                 ) {
-                    return interaction.reply(
-                        {
-                            content:
-                                'البريد الإلكتروني مستخدم مسبقاً!',
+                    return interaction.reply({
+                        content:
+                            'البريد الإلكتروني مستخدم مسبقاً!',
 
-                            ephemeral:
-                                true
-                        }
-                    );
+                        ephemeral: true
+                    });
                 }
 
                 const code =
@@ -1430,15 +1502,11 @@ client.on(
                     interaction.user.id,
                     {
                         username,
-
                         email,
-
                         password,
 
                         codeHash:
-                            hashCode(
-                                code
-                            ),
+                            hashCode(code),
 
                         expiresAt:
                             Date.now() +
@@ -1449,85 +1517,76 @@ client.on(
                 try {
 
                     await interaction.user.send(
-                        `مرحباً **${username}**،
-كود التحقق الخاص بإنشاء حسابك في AbuSaud Store هو:
+                        `مرحباً **${username}** 👋
+
+كود التحقق الخاص بإنشاء حسابك في **AbuSaud Store** هو:
 
 \`\`\`
 ${code}
 \`\`\`
 
-هذا الكود صالح لمدة 10 دقائق.`
+الكود صالح لمدة **10 دقائق**.
+
+بعد استلام الكود، ارجع إلى السيرفر واضغط زر **إدخال كود التحقق**.`
                     );
 
-                    const verifyModal =
-                        new ModalBuilder()
-                            .setCustomId(
-                                'verify_modal'
-                            )
-
-                            .setTitle(
-                                'تأكيد كود التحقق'
-                            );
-
-                    const codeInput =
-                        new TextInputBuilder()
-                            .setCustomId(
-                                'verify_code'
-                            )
-
-                            .setLabel(
-                                'أدخل الكود المرسل إلى الخاص'
-                            )
-
-                            .setStyle(
-                                TextInputStyle.Short
-                            )
-
-                            .setMinLength(
-                                6
-                            )
-
-                            .setMaxLength(
-                                6
-                            )
-
-                            .setRequired(
-                                true
-                            );
-
-                    verifyModal.addComponents(
+                    const row =
                         new ActionRowBuilder()
                             .addComponents(
-                                codeInput
-                            )
+                                new ButtonBuilder()
+                                    .setCustomId(
+                                        'open_register_verify'
+                                    )
+
+                                    .setLabel(
+                                        'إدخال كود التحقق'
+                                    )
+
+                                    .setStyle(
+                                        ButtonStyle.Primary
+                                    )
+                            );
+
+                    await interaction.reply({
+                        content:
+                            'تم إرسال كود التحقق إلى الخاص 📩\n\nافتح رسائل Discord الخاصة بك، ثم ارجع واضغط الزر بالأسفل لإدخال الكود.',
+
+                        components: [
+                            row
+                        ],
+
+                        ephemeral: true
+                    });
+
+                } catch (error) {
+
+                    discordPendingRegistrations.delete(
+                        interaction.user.id
                     );
 
-                    await interaction.showModal(
-                        verifyModal
+                    console.error(
+                        '[Register DM Error]',
+                        error
                     );
 
-                } catch {
+                    await interaction.reply({
+                        content:
+                            'تعذر إرسال رسالة الخاص. افتح الرسائل الخاصة في Discord وحاول مرة أخرى.',
 
-                    await interaction.reply(
-                        {
-                            content:
-                                'تعذر إرسال رسالة الخاص (DM). تأكد من فتح الخاص ولديك رسائل خاصة مسموحة.',
-
-                            ephemeral:
-                                true
-                        }
-                    );
+                        ephemeral: true
+                    });
                 }
             }
 
-            // ==============================
-            // Register Verify
-            // ==============================
+            // ==================================
+            // Verify Register
+            // ==================================
 
             else if (
                 interaction.customId ===
                 'verify_modal'
             ) {
+
                 const enteredCode =
                     interaction.fields
                         .getTextInputValue(
@@ -1541,34 +1600,42 @@ ${code}
                     );
 
                 if (!pending) {
-                    return interaction.reply(
-                        {
-                            content:
-                                'انتهت الجلسة، يرجى إعادة المحاولة.',
+                    return interaction.reply({
+                        content:
+                            'انتهت الجلسة. ابدأ إنشاء الحساب من جديد.',
 
-                            ephemeral:
-                                true
-                        }
-                    );
+                        ephemeral: true
+                    });
                 }
 
                 if (
                     Date.now() >
                     pending.expiresAt
                 ) {
+
                     discordPendingRegistrations.delete(
                         interaction.user.id
                     );
 
-                    return interaction.reply(
-                        {
-                            content:
-                                'انتهت صلاحية الكود. أعد التسجيل من جديد.',
+                    return interaction.reply({
+                        content:
+                            'انتهت صلاحية الكود. ابدأ التسجيل من جديد.',
 
-                            ephemeral:
-                                true
-                        }
-                    );
+                        ephemeral: true
+                    });
+                }
+
+                if (
+                    !/^\d{6}$/.test(
+                        enteredCode
+                    )
+                ) {
+                    return interaction.reply({
+                        content:
+                            'الكود يجب أن يكون 6 أرقام.',
+
+                        ephemeral: true
+                    });
                 }
 
                 if (
@@ -1577,19 +1644,58 @@ ${code}
                     ) !==
                     pending.codeHash
                 ) {
-                    return interaction.reply(
-                        {
-                            content:
-                                'كود التحقق غير صحيح!',
+                    return interaction.reply({
+                        content:
+                            'كود التحقق غير صحيح ❌',
 
-                            ephemeral:
-                                true
-                        }
-                    );
+                        ephemeral: true
+                    });
                 }
 
                 const db =
                     getDB();
+
+                if (
+                    db.users.some(
+                        u =>
+                            u.username
+                                .toLowerCase() ===
+                            pending.username
+                                .toLowerCase()
+                    )
+                ) {
+                    discordPendingRegistrations.delete(
+                        interaction.user.id
+                    );
+
+                    return interaction.reply({
+                        content:
+                            'اسم المستخدم أصبح مستخدماً بالفعل.',
+
+                        ephemeral: true
+                    });
+                }
+
+                if (
+                    db.users.some(
+                        u =>
+                            u.email &&
+                            u.email
+                                .toLowerCase() ===
+                            pending.email
+                    )
+                ) {
+                    discordPendingRegistrations.delete(
+                        interaction.user.id
+                    );
+
+                    return interaction.reply({
+                        content:
+                            'البريد الإلكتروني أصبح مستخدماً بالفعل.',
+
+                        ephemeral: true
+                    });
+                }
 
                 db.users.push({
                     username:
@@ -1617,25 +1723,23 @@ ${code}
                     interaction.user.id
                 );
 
-                await interaction.reply(
-                    {
-                        content:
-                            'تم إنشاء حسابك وتأكيد بريدك بنجاح تام! يمكنك الآن تسجيل الدخول بالموقع.',
+                await interaction.reply({
+                    content:
+                        'تم إنشاء حسابك وتأكيده بنجاح ✅\n\nيمكنك الآن استخدام زر **تسجيل الدخول** للدخول إلى الموقع.',
 
-                        ephemeral:
-                            true
-                    }
-                );
+                    ephemeral: true
+                });
             }
 
-            // ==============================
+            // ==================================
             // Login Modal
-            // ==============================
+            // ==================================
 
             else if (
                 interaction.customId ===
                 'login_modal'
             ) {
+
                 const email =
                     interaction.fields
                         .getTextInputValue(
@@ -1657,15 +1761,12 @@ ${code}
                     );
 
                 if (!user) {
-                    return interaction.reply(
-                        {
-                            content:
-                                'لم يتم العثور على حساب مرتبط بهذا البريد الإلكتروني.',
+                    return interaction.reply({
+                        content:
+                            'لم يتم العثور على حساب مرتبط بهذا البريد الإلكتروني.',
 
-                            ephemeral:
-                                true
-                        }
-                    );
+                        ephemeral: true
+                    });
                 }
 
                 const code =
@@ -1678,9 +1779,7 @@ ${code}
                             user.username,
 
                         codeHash:
-                            hashCode(
-                                code
-                            ),
+                            hashCode(code),
 
                         expiresAt:
                             Date.now() +
@@ -1691,86 +1790,76 @@ ${code}
                 try {
 
                     await interaction.user.send(
-                        `مرحباً **${user.username}**،
+                        `مرحباً **${user.username}** 👋
 
-كود تسجيل الدخول الخاص بك هو:
+كود تسجيل الدخول إلى **AbuSaud Store** هو:
 
 \`\`\`
 ${code}
 \`\`\`
 
-صالح لمدة 10 دقائق.`
+الكود صالح لمدة **10 دقائق**.
+
+بعد استلام الكود، ارجع إلى السيرفر واضغط زر **إدخال كود الدخول**.`
                     );
 
-                    const loginVerifyModal =
-                        new ModalBuilder()
-                            .setCustomId(
-                                'login_verify_modal'
-                            )
-
-                            .setTitle(
-                                'تأكيد تسجيل الدخول'
-                            );
-
-                    const codeInput =
-                        new TextInputBuilder()
-                            .setCustomId(
-                                'login_verify_code'
-                            )
-
-                            .setLabel(
-                                'أدخل كود الدخول المرسل للخاص'
-                            )
-
-                            .setStyle(
-                                TextInputStyle.Short
-                            )
-
-                            .setMinLength(
-                                6
-                            )
-
-                            .setMaxLength(
-                                6
-                            )
-
-                            .setRequired(
-                                true
-                            );
-
-                    loginVerifyModal.addComponents(
+                    const row =
                         new ActionRowBuilder()
                             .addComponents(
-                                codeInput
-                            )
+                                new ButtonBuilder()
+                                    .setCustomId(
+                                        'open_login_verify'
+                                    )
+
+                                    .setLabel(
+                                        'إدخال كود الدخول'
+                                    )
+
+                                    .setStyle(
+                                        ButtonStyle.Success
+                                    )
+                            );
+
+                    await interaction.reply({
+                        content:
+                            'تم إرسال كود الدخول إلى الخاص 📩\n\nافتح رسائل Discord الخاصة بك، ثم ارجع واضغط الزر بالأسفل لإدخال الكود.',
+
+                        components: [
+                            row
+                        ],
+
+                        ephemeral: true
+                    });
+
+                } catch (error) {
+
+                    discordPendingLogins.delete(
+                        interaction.user.id
                     );
 
-                    await interaction.showModal(
-                        loginVerifyModal
+                    console.error(
+                        '[Login DM Error]',
+                        error
                     );
 
-                } catch {
+                    await interaction.reply({
+                        content:
+                            'تعذر إرسال الكود على الخاص. تأكد من السماح بالرسائل الخاصة من أعضاء السيرفر.',
 
-                    await interaction.reply(
-                        {
-                            content:
-                                'تعذر إرسال الكود على الخاص. تأكد من إعدادات حسابك.',
-
-                            ephemeral:
-                                true
-                        }
-                    );
+                        ephemeral: true
+                    });
                 }
             }
 
-            // ==============================
-            // Login Verify
-            // ==============================
+            // ==================================
+            // Verify Login
+            // ==================================
 
             else if (
                 interaction.customId ===
                 'login_verify_modal'
             ) {
+
                 const enteredCode =
                     interaction.fields
                         .getTextInputValue(
@@ -1783,24 +1872,43 @@ ${code}
                         interaction.user.id
                     );
 
+                if (!pending) {
+                    return interaction.reply({
+                        content:
+                            'لا يوجد تسجيل دخول معلق. اضغط تسجيل الدخول من جديد.',
+
+                        ephemeral: true
+                    });
+                }
+
                 if (
-                    !pending ||
                     Date.now() >
                     pending.expiresAt
                 ) {
+
                     discordPendingLogins.delete(
                         interaction.user.id
                     );
 
-                    return interaction.reply(
-                        {
-                            content:
-                                'انتهت الصلاحية، أعد المحاولة.',
+                    return interaction.reply({
+                        content:
+                            'انتهت صلاحية الكود. ابدأ تسجيل الدخول من جديد.',
 
-                            ephemeral:
-                                true
-                        }
-                    );
+                        ephemeral: true
+                    });
+                }
+
+                if (
+                    !/^\d{6}$/.test(
+                        enteredCode
+                    )
+                ) {
+                    return interaction.reply({
+                        content:
+                            'الكود يجب أن يكون 6 أرقام.',
+
+                        ephemeral: true
+                    });
                 }
 
                 if (
@@ -1809,66 +1917,55 @@ ${code}
                     ) !==
                     pending.codeHash
                 ) {
-                    return interaction.reply(
-                        {
-                            content:
-                                'الكود غير صحيح!',
+                    return interaction.reply({
+                        content:
+                            'الكود غير صحيح ❌',
 
-                            ephemeral:
-                                true
-                        }
-                    );
+                        ephemeral: true
+                    });
                 }
 
-                // حذف الكود بعد استخدامه
                 discordPendingLogins.delete(
                     interaction.user.id
                 );
 
-                // البحث عن المستخدم
-                const dbAfterVerify =
+                const db =
                     getDB();
 
-                const verifiedUser =
-                    dbAfterVerify.users.find(
+                const user =
+                    db.users.find(
                         u =>
                             u.username ===
                             pending.username
                     );
 
-                if (!verifiedUser) {
-                    return interaction.reply(
-                        {
-                            content:
-                                'تعذر العثور على حسابك بعد التحقق. حاول تسجيل الدخول من جديد.',
+                if (!user) {
+                    return interaction.reply({
+                        content:
+                            'لم يتم العثور على الحساب.',
 
-                            ephemeral:
-                                true
-                        }
-                    );
+                        ephemeral: true
+                    });
                 }
 
                 // ==================================
-                // إنشاء رابط تسجيل الدخول
+                // Create Login Ticket
                 // ==================================
 
                 const loginTicket =
-                    createDiscordLoginTicket(
-                        {
-                            username:
-                                verifiedUser.username,
+                    createDiscordLoginTicket({
+                        username:
+                            user.username,
 
-                            discordId:
-                                interaction.user.id
-                        }
-                    );
+                        discordId:
+                            interaction.user.id
+                    });
 
                 const loginUrl =
                     `${SITE_URL}/discord-login?ticket=${encodeURIComponent(
                         loginTicket
                     )}`;
 
-                // زر دخول للموقع
                 const loginButton =
                     new ButtonBuilder()
                         .setLabel(
@@ -1883,32 +1980,29 @@ ${code}
                             loginUrl
                         );
 
-                const loginRow =
+                const row =
                     new ActionRowBuilder()
                         .addComponents(
                             loginButton
                         );
 
-                await interaction.reply(
-                    {
-                        content:
-                            'تم التحقق بنجاح! اضغط الزر بالأسفل لتسجيل الدخول إلى حسابك في الموقع.\n\nالرابط صالح لمدة 5 دقائق ويعمل مرة واحدة فقط.',
+                await interaction.reply({
+                    content:
+                        'تم التحقق من الكود بنجاح ✅\n\nاضغط الزر بالأسفل للدخول إلى حسابك في الموقع.\n\nالرابط صالح لمدة **5 دقائق** ويعمل **مرة واحدة فقط**.',
 
-                        components: [
-                            loginRow
-                        ],
+                    components: [
+                        row
+                    ],
 
-                        ephemeral:
-                            true
-                    }
-                );
+                    ephemeral: true
+                });
             }
         }
     }
 );
 
 // ==========================================
-// Discord Token
+// Discord Login
 // ==========================================
 
 const discordToken =
@@ -1926,13 +2020,20 @@ console.log(
         : 0
 );
 
-client.login(
-    discordToken
-).catch(error => {
+if (!discordToken) {
     console.error(
-        '[Discord] Login failed:',
-        error.message
+        '[Discord] DISCORD_TOKEN is missing from Railway Variables.'
     );
+} else {
+    client.login(
+        discordToken
+    ).catch(error => {
 
-    process.exit(1);
-});
+        console.error(
+            '[Discord] Login failed:',
+            error.message
+        );
+
+        process.exit(1);
+    });
+}
