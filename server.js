@@ -2037,3 +2037,141 @@ if (!discordToken) {
         process.exit(1);
     });
 }
+
+// ==========================================
+// ADMIN PANEL
+// ==========================================
+
+const ADMIN_DISCORD_ID = process.env.ADMIN_DISCORD_ID;
+
+const adminSelectedUsers = new Map();
+
+client.on('messageCreate', async (message) => {
+    if (message.author.bot) return;
+
+    if (message.content !== '!admin') return;
+
+    // أنت فقط
+    if (message.author.id !== ADMIN_DISCORD_ID) {
+        return message.reply({
+            content: '❌ ما عندك صلاحية استخدام لوحة الإدارة.'
+        });
+    }
+
+    const embed = new EmbedBuilder()
+        .setTitle('🛠️ لوحة الإدارة')
+        .setDescription(
+            'اختر العملية التي تريد تنفيذها من القائمة بالأسفل.'
+        )
+        .setColor(0x0099ff);
+
+    const row = new ActionRowBuilder()
+        .addComponents(
+            new ButtonBuilder()
+                .setCustomId('admin_accounts')
+                .setLabel('👤 الحسابات')
+                .setStyle(ButtonStyle.Primary),
+
+            new ButtonBuilder()
+                .setCustomId('admin_bots')
+                .setLabel('🤖 البوتات')
+                .setStyle(ButtonStyle.Success)
+        );
+
+    await message.reply({
+        embeds: [embed],
+        components: [row]
+    });
+});
+
+client.on('interactionCreate', async (interaction) => {
+
+    if (!interaction.isButton()) return;
+
+    // حماية لوحة الإدارة
+    if (interaction.user.id !== ADMIN_DISCORD_ID) {
+        return interaction.reply({
+            content: '❌ هذه اللوحة خاصة بالإدارة.',
+            ephemeral: true
+        });
+    }
+
+    // ==========================================
+    // عرض الحسابات
+    // ==========================================
+
+    if (interaction.customId === 'admin_accounts') {
+
+        const db = getDB();
+
+        if (!db.users || db.users.length === 0) {
+            return interaction.reply({
+                content: '❌ لا توجد حسابات مسجلة.',
+                ephemeral: true
+            });
+        }
+
+        const options = db.users
+            .slice(0, 25)
+            .map((user, index) => ({
+                label: user.username.slice(0, 100),
+                description:
+                    user.email
+                        ? user.email.slice(0, 100)
+                        : 'بدون بريد إلكتروني',
+                value: `admin_user_${index}`
+            }));
+
+        const menu = new StringSelectMenuBuilder()
+            .setCustomId('admin_select_user')
+            .setPlaceholder('اختر حساب...')
+            .addOptions(options);
+
+        const row = new ActionRowBuilder()
+            .addComponents(menu);
+
+        return interaction.reply({
+            content: '👤 اختر الحساب الذي تريد إدارته:',
+            components: [row],
+            ephemeral: true
+        });
+    }
+
+    // ==========================================
+    // إدارة البوتات
+    // ==========================================
+
+    if (interaction.customId === 'admin_bots') {
+
+        const db = getDB();
+
+        if (!db.users || db.users.length === 0) {
+            return interaction.reply({
+                content: '❌ لا توجد حسابات.',
+                ephemeral: true
+            });
+        }
+
+        const options = db.users
+            .slice(0, 25)
+            .map((user, index) => ({
+                label: user.username.slice(0, 100),
+                description: 'إدارة بوتات هذا الحساب',
+                value: `admin_bots_${index}`
+            }));
+
+        const menu = new StringSelectMenuBuilder()
+            .setCustomId('admin_select_bots_user')
+            .setPlaceholder('اختر صاحب البوتات...')
+            .addOptions(options);
+
+        const row = new ActionRowBuilder()
+            .addComponents(menu);
+
+        return interaction.reply({
+            content: '🤖 اختر الحساب:',
+            components: [row],
+            ephemeral: true
+        });
+    }
+});
