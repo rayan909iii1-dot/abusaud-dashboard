@@ -16,14 +16,4 @@
       "status": "offline"
     }
   ],
-    "bots": [
-    {
-      "id": "1536865254548701187",
-      "name": "Protection Abusaud",
-      "token": "MTUzNjg2NTI1NDU0ODcwMTE4Nw.GpJ--v.FXJNLon7yuc0AkgDAD5rqgEVH8Z8mc-I89IGuQ",
-      "script": "Protection",
-      "owner": "abusaud",
-      "status": "offline"
-    }
-  ]
 }
