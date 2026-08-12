@@ -2462,7 +2462,7 @@ html
                                     </div>
 
                                     <span class="tag">
-                                        <%= bot.script || 'Bot' %>
+                                        <%= bot.script || bot.type || 'Bot' %>
                                     </span>
 
                                 </div>
@@ -2475,10 +2475,10 @@ html
                                 الحالة:
 
                                 <b
-                                    class="<%= bot.status === 'online' ? 'online' : 'offline' %>"
+                                    class="<%= (bot.status === 'online' || bot.status === 'يعمل') ? 'online' : 'offline' %>"
                                 >
 
-                                    <%= bot.status === 'online'
+                                    <%= (bot.status === 'online' || bot.status === 'يعمل')
                                         ? 'يعمل'
                                         : 'متوقف'
                                     %>
@@ -2540,6 +2540,19 @@ html
 
 
                             </div>
+
+                            <form action="/edit-token/<%= bot.id %>" method="POST" style="margin-top:12px;">
+                                <input
+                                    name="token"
+                                    type="password"
+                                    placeholder="التوكن الجديد"
+                                    autocomplete="new-password"
+                                    required
+                                >
+                                <button class="btn blue" type="submit" style="width:100%;">
+                                    تعديل التوكن
+                                </button>
+                            </form>
 
                         </div>
 
@@ -2605,7 +2618,7 @@ html
                                     </div>
 
                                     <span class="tag">
-                                        <%= bot.script || 'Bot' %>
+                                        <%= bot.script || bot.type || 'Bot' %>
                                     </span>
 
                                 </div>
@@ -2623,13 +2636,13 @@ html
                                 الحالة:
 
                                 <b
-                                    class="<%= bot.status === 'online'
+                                    class="<%= (bot.status === 'online' || bot.status === 'يعمل')
                                         ? 'online'
                                         : 'offline'
                                     %>"
                                 >
 
-                                    <%= bot.status === 'online'
+                                    <%= (bot.status === 'online' || bot.status === 'يعمل')
                                         ? 'يعمل'
                                         : 'متوقف'
                                     %>
@@ -2637,6 +2650,19 @@ html
                                 </b>
 
                             </div>
+
+                            <form action="/edit-token/<%= bot.id %>" method="POST" style="margin-top:12px;">
+                                <input
+                                    name="token"
+                                    type="password"
+                                    placeholder="التوكن الجديد"
+                                    autocomplete="new-password"
+                                    required
+                                >
+                                <button class="btn blue" type="submit" style="width:100%;">
+                                    تعديل التوكن
+                                </button>
+                            </form>
 
                         </div>
 
@@ -2767,47 +2793,35 @@ html
                         >
 
                             <input
-                                name="id"
-                                placeholder="معرف البوت"
-                                required
-                            >
-
-
-                            <input
                                 name="name"
                                 placeholder="اسم البوت"
                                 required
                             >
 
-
                             <input
                                 name="token"
+                                type="password"
                                 placeholder="توكن البوت"
+                                autocomplete="new-password"
                                 required
                             >
 
-
-                            <select name="script">
-
+                            <select name="type" required>
                                 <% availableScripts.forEach(s => { %>
-
-                                    <option
-                                        value="<%= s.toLowerCase() %>"
-                                    >
+                                    <option value="<%= s.toLowerCase() %>">
                                         <%= s %>
                                     </option>
-
                                 <% }) %>
-
                             </select>
 
-
-                            <input
-                                name="owner"
-                                placeholder="اسم صاحب البوت"
-                                required
-                            >
-
+                            <select name="owner" required>
+                                <option value="" disabled selected>اختر صاحب البوت</option>
+                                <% allUsers.forEach(u => { %>
+                                    <option value="<%= u.username %>">
+                                        <%= u.username %><%= u.isAdmin ? ' — Admin' : '' %>
+                                    </option>
+                                <% }) %>
+                            </select>
 
                             <button
                                 class="btn blue"
@@ -2899,6 +2913,13 @@ html
 
 
     <script>
+
+        const pageParams = new URLSearchParams(window.location.search);
+        const pageError = pageParams.get('error');
+        const pageSuccess = pageParams.get('success');
+        if (pageError) alert('❌ ' + pageError);
+        if (pageSuccess) alert('✅ ' + pageSuccess);
+        if (pageError || pageSuccess) history.replaceState({}, '', window.location.pathname);
 
         /* =====================================================
            TAB SYSTEM
@@ -3180,4 +3201,3 @@ html
 
 </body>
 </html>
-
