@@ -1,17 +1,14 @@
 {
   "name": "abusaud-dashboard",
   "version": "1.0.0",
-  "description": "AbuSaud Store dashboard",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "discord.js": "^14.14.1",
+    "discord.js": "^14.21.0",
     "ejs": "^3.1.10",
-    "express": "^4.21.2",
-    "express-session": "^1.18.1",
-    "nodemailer": "^7.0.5",
-    "session-file-store": "^1.5.0"
+    "express": "^5.1.0",
+    "express-session": "^1.18.2"
   }
 }
