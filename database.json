@@ -1,4 +1,55 @@
+```json
 {
-  "users":[{"username":"abusaud","password":"909_909","isAdmin":true}],
-  "bots":[]
+  "users": [
+    {
+      "username": "abusaud",
+      "password": "909_909",
+      "email": "",
+      "isAdmin": true,
+      "emailVerified": true
+    }
+  ],
+  "bots": [
+    {
+      "id": "abusaud_welcome",
+      "name": "AbuSaud Welcome",
+      "token": "YOUR_BOT_TOKEN_HERE",
+      "type": "Welcome",
+      "owner": "abusaud",
+      "ownerDiscordId": null,
+      "status": "متوقف",
+      "createdAt": "2026-08-12T00:00:00.000Z"
+    },
+    {
+      "id": "abusaud_tickets",
+      "name": "AbuSaud Tickets",
+      "token": "YOUR_BOT_TOKEN_HERE",
+      "type": "Tickets",
+      "owner": "abusaud",
+      "ownerDiscordId": null,
+      "status": "متوقف",
+      "createdAt": "2026-08-12T00:00:00.000Z"
+    },
+    {
+      "id": "abusaud_protection",
+      "name": "AbuSaud Protection",
+      "token": "MTUzNjg2NTI1NDU0ODcwMTE4Nw.GJrtSO.t87ylSeRDWG6drXEU6VADtsy3CdgOxnMRFei9M",
+      "type": "Protection",
+      "owner": "abusaud",
+      "ownerDiscordId": null,
+      "status": "متوقف",
+      "createdAt": "2026-08-12T00:00:00.000Z"
+    },
+    {
+      "id": "abusaud_bot",
+      "name": "AbuSaud Bot",
+      "token": "YOUR_BOT_TOKEN_HERE",
+      "type": "bot",
+      "owner": "abusaud",
+      "ownerDiscordId": null,
+      "status": "متوقف",
+      "createdAt": "2026-08-12T00:00:00.000Z"
+    }
+  ]
 }
+```
