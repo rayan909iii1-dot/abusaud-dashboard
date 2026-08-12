@@ -821,58 +821,151 @@ app.post('/resend-verification', async (req, res) => {
 // ======================================================
 
 app.post('/add-bot', (req, res) => {
-    if (
-        !req.session.user ||
-        !req.session.user.isAdmin
-    ) {
-        return res.redirect('/');
+    try {
+        if (
+            !req.session.user ||
+            !req.session.user.isAdmin
+        ) {
+            return res.redirect('/');
+        }
+
+        const name = String(req.body.name || '').trim();
+        const token = String(req.body.token || '').trim();
+        const type = String(req.body.type || '').trim();
+        const owner = String(req.body.owner || '').trim();
+
+        if (!name || !token || !type || !owner) {
+            return res.redirect('/?error=missing_bot_data');
+        }
+
+        const db = getDB();
+        const ownerUser = db.users.find(
+            user => user.username === owner
+        );
+
+        if (!ownerUser) {
+            return res.redirect('/?error=owner_not_found');
+        }
+
+        const duplicate = db.bots.find(
+            bot => bot.token === token
+        );
+
+        if (duplicate) {
+            return res.redirect('/?error=token_exists');
+        }
+
+        const newBot = {
+            id: crypto.randomBytes(8).toString('hex'),
+            name,
+            token,
+            type,
+            owner,
+            ownerDiscordId: ownerUser.discordId || null,
+            status: 'متوقف',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        db.bots.push(newBot);
+        saveDB(db);
+
+        console.log(
+            `[BOT ADDED] ${newBot.name} -> ${newBot.owner} (${newBot.id})`
+        );
+
+        return res.redirect('/?added=1');
+    } catch (error) {
+        console.error('[ADD BOT ERROR]', error);
+        return res.redirect('/?error=add_failed');
     }
+});
 
-    const name = String(
-        req.body.name || ''
-    ).trim();
+// ======================================================
+// EDIT BOT TOKEN
+// ======================================================
 
-    const token = String(
-        req.body.token || ''
-    ).trim();
+app.post('/edit-token/:id', async (req, res) => {
+    try {
+        if (!req.session.user) {
+            return res.status(401).json({
+                success: false,
+                message: 'يجب تسجيل الدخول أولاً.'
+            });
+        }
 
-    const type = String(
-        req.body.type || ''
-    ).trim();
+        const token = String(req.body.token || '').trim();
+        if (!token) {
+            return res.status(400).json({
+                success: false,
+                message: 'أدخل التوكن الجديد.'
+            });
+        }
 
-    const owner = String(
-        req.body.owner || ''
-    ).trim();
+        const db = getDB();
+        const bot = db.bots.find(
+            item => item.id === req.params.id
+        );
 
-    if (!name || !token || !type || !owner) {
-        return res.redirect('/');
+        if (!bot) {
+            return res.status(404).json({
+                success: false,
+                message: 'البوت غير موجود.'
+            });
+        }
+
+        const isAdmin = Boolean(req.session.user.isAdmin);
+        const isOwner = bot.owner === req.session.user.username;
+
+        if (!isAdmin && !isOwner) {
+            return res.status(403).json({
+                success: false,
+                message: 'ليس لديك صلاحية تعديل هذا البوت.'
+            });
+        }
+
+        const duplicate = db.bots.find(
+            item => item.id !== bot.id && item.token === token
+        );
+
+        if (duplicate) {
+            return res.status(409).json({
+                success: false,
+                message: 'هذا التوكن مستخدم في بوت آخر.'
+            });
+        }
+
+        const wasRunning = runningBots.has(bot.id);
+
+        if (wasRunning) {
+            const oldClient = runningBots.get(bot.id);
+            try {
+                oldClient.destroy();
+            } catch (error) {
+                console.error('[EDIT TOKEN DESTROY ERROR]', error);
+            }
+            runningBots.delete(bot.id);
+            updateBotStatus(bot.id, 'متوقف');
+        }
+
+        bot.token = token;
+        bot.status = 'متوقف';
+        bot.updatedAt = new Date().toISOString();
+        saveDB(db);
+
+        return res.json({
+            success: true,
+            message: wasRunning
+                ? 'تم تحديث التوكن وإيقاف البوت. شغّله من جديد بالتوكن الجديد.'
+                : 'تم تحديث توكن البوت بنجاح.'
+        });
+    } catch (error) {
+        console.error('[EDIT TOKEN ERROR]', error);
+        return res.status(500).json({
+            success: false,
+            message: error.message || 'تعذر تحديث التوكن.'
+        });
     }
-
-    const db = getDB();
-
-    const ownerUser = db.users.find(
-        user => user.username === owner
-    );
-
-    if (!ownerUser) {
-        return res.redirect('/');
-    }
-
-    db.bots.push({
-        id: crypto.randomBytes(8).toString('hex'),
-        name,
-        token,
-        type,
-        owner,
-        ownerDiscordId:
-            ownerUser.discordId || null,
-        status: 'متوقف',
-        createdAt: new Date().toISOString()
-    });
-
-    saveDB(db);
-
-    res.redirect('/');
 });
 
 // ======================================================
@@ -3158,9 +3251,10 @@ client.on(
                     });
                 }
 
+                const visibleBots = bots.slice(0, 20);
+
                 const text =
-                    bots
-                        .slice(0, 20)
+                    visibleBots
                         .map(
                             (
                                 bot,
@@ -3172,9 +3266,122 @@ client.on(
                             '\n'
                         );
 
+                const rows = [];
+                for (let i = 0; i < visibleBots.length; i += 5) {
+                    const row = new ActionRowBuilder();
+                    visibleBots
+                        .slice(i, i + 5)
+                        .forEach(bot => {
+                            row.addComponents(
+                                new ButtonBuilder()
+                                    .setCustomId(`admin_edit_token_${bot.id}`)
+                                    .setLabel(`تعديل ${String(bot.name || 'بوت').slice(0, 55)}`)
+                                    .setStyle(ButtonStyle.Secondary)
+                            );
+                        });
+                    rows.push(row);
+                }
+
                 return interaction.reply({
                     content:
-                        `🤖 **بوتات ${user.username}:**\n\n${text}`,
+                        `🤖 **بوتات ${user.username}:**\n\n${text}\n\nاضغط على زر البوت لتعديل التوكن.`,
+                    components: rows,
+                    ephemeral: true
+                });
+            }
+
+            // EDIT BOT TOKEN MODAL
+            if (
+                interaction.isButton() &&
+                id.startsWith('admin_edit_token_')
+            ) {
+                const botId = id.replace('admin_edit_token_', '');
+                const db = getDB();
+                const bot = db.bots.find(item => item.id === botId);
+
+                if (!bot) {
+                    return interaction.reply({
+                        content: '❌ البوت غير موجود.',
+                        ephemeral: true
+                    });
+                }
+
+                const modal = new ModalBuilder()
+                    .setCustomId(`admin_edit_token_modal_${bot.id}`)
+                    .setTitle(`تعديل توكن ${String(bot.name || 'البوت').slice(0, 40)}`);
+
+                const tokenInput = new TextInputBuilder()
+                    .setCustomId('edit_bot_token')
+                    .setLabel('Bot Token الجديد')
+                    .setPlaceholder('ضع التوكن الجديد هنا')
+                    .setStyle(TextInputStyle.Paragraph)
+                    .setRequired(true);
+
+                modal.addComponents(
+                    new ActionRowBuilder().addComponents(tokenInput)
+                );
+
+                return interaction.showModal(modal);
+            }
+
+            // EDIT BOT TOKEN SUBMIT
+            if (
+                interaction.isModalSubmit() &&
+                id.startsWith('admin_edit_token_modal_')
+            ) {
+                const botId = id.replace('admin_edit_token_modal_', '');
+                const token = interaction.fields
+                    .getTextInputValue('edit_bot_token')
+                    .trim();
+
+                if (!token) {
+                    return interaction.reply({
+                        content: '❌ أدخل التوكن الجديد.',
+                        ephemeral: true
+                    });
+                }
+
+                const db = getDB();
+                const bot = db.bots.find(item => item.id === botId);
+
+                if (!bot) {
+                    return interaction.reply({
+                        content: '❌ البوت غير موجود.',
+                        ephemeral: true
+                    });
+                }
+
+                const duplicate = db.bots.find(
+                    item => item.id !== bot.id && item.token === token
+                );
+
+                if (duplicate) {
+                    return interaction.reply({
+                        content: '❌ هذا التوكن مستخدم في بوت آخر.',
+                        ephemeral: true
+                    });
+                }
+
+                const wasRunning = runningBots.has(bot.id);
+                if (wasRunning) {
+                    const botClient = runningBots.get(bot.id);
+                    try {
+                        botClient.destroy();
+                    } catch (error) {
+                        console.error('[ADMIN EDIT TOKEN DESTROY ERROR]', error);
+                    }
+                    runningBots.delete(bot.id);
+                }
+
+                bot.token = token;
+                bot.status = 'متوقف';
+                bot.updatedAt = new Date().toISOString();
+                saveDB(db);
+
+                return interaction.reply({
+                    content: wasRunning
+                        ? `✅ تم تحديث توكن **${bot.name}** وإيقافه. شغّله من جديد بالتوكن الجديد.`
+                        : `✅ تم تحديث توكن **${bot.name}** بنجاح.`,
                     ephemeral: true
                 });
             }
