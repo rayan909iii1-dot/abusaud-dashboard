@@ -67,9 +67,7 @@ app.use(
             ttl: 60 * 60 * 24 * 7
         }),
 
-        secret:
-            process.env.SESSION_SECRET ||
-            'CHANGE_THIS_SESSION_SECRET_ON_RAILWAY',
+        secret: process.env.SESSION_SECRET || (process.env.NODE_ENV === 'production' ? (() => { throw new Error('SESSION_SECRET is required in production.'); })() : 'dev-only-session-secret-change-me'),
 
         resave: false,
         saveUninitialized: false,
@@ -91,12 +89,14 @@ const databasePath = path.join(__dirname, 'database.json');
 
 function getDB() {
     if (!fs.existsSync(databasePath)) {
+        const adminUsername = String(process.env.ADMIN_USERNAME || 'abusaud').trim();
+        const adminPassword = String(process.env.ADMIN_PASSWORD || 'change-me-now');
         const initial = {
             users: [
                 {
-                    username: 'abu saud',
-                    password: '123',
-                    email: 'admin@example.com',
+                    username: adminUsername,
+                    password: hashPassword(adminPassword),
+                    email: process.env.ADMIN_EMAIL || '',
                     isAdmin: true,
                     emailVerified: true,
                     discordId: ADMIN_DISCORD_ID
@@ -166,6 +166,27 @@ function hashCode(code) {
         .createHash('sha256')
         .update(String(code))
         .digest('hex');
+}
+
+// Password hashing using Node's built-in scrypt. New passwords are stored as
+// scrypt hashes; legacy plaintext passwords are upgraded automatically on login.
+function hashPassword(password) {
+    const salt = crypto.randomBytes(16).toString('hex');
+    const derived = crypto.scryptSync(String(password), salt, 64).toString('hex');
+    return `scrypt:${salt}:${derived}`;
+}
+
+function verifyPassword(password, stored) {
+    if (!stored) return false;
+    if (!String(stored).startsWith('scrypt:')) {
+        return String(password) === String(stored);
+    }
+    const [, salt, expected] = String(stored).split(':');
+    if (!salt || !expected) return false;
+    const actual = crypto.scryptSync(String(password), salt, 64).toString('hex');
+    const a = Buffer.from(actual, 'hex');
+    const b = Buffer.from(expected, 'hex');
+    return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
 function getPendingRegistration(req) {
@@ -251,10 +272,6 @@ const mailTransporter = nodemailer.createTransport({
     auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS
-    },
-
-    tls: {
-        rejectUnauthorized: false
     },
 
     connectionTimeout: 8000,
@@ -446,9 +463,15 @@ app.post('/login', (req, res) => {
 
     const user = db.users.find(
         u =>
-            u.username === username &&
-            u.password === password
+            String(u.username || '').toLowerCase() === username.toLowerCase() &&
+            verifyPassword(password, u.password)
     );
+
+    // Upgrade legacy plaintext passwords after a successful login.
+    if (user && !String(user.password || '').startsWith('scrypt:')) {
+        user.password = hashPassword(password);
+        saveDB(db);
+    }
 
     if (!user) {
         return res.render('login', {
@@ -590,10 +613,6 @@ app.post('/register', async (req, res) => {
         lastSentAt: Date.now()
     };
 
-    console.log(
-        `[REGISTER CODE] ${username}: ${code}`
-    );
-
     try {
         await Promise.race([
             sendVerificationEmail(
@@ -716,7 +735,7 @@ app.post('/verify-email', (req, res) => {
 
     db.users.push({
         username: pending.username,
-        password: pending.password,
+        password: hashPassword(pending.password),
         email: pending.email,
         isAdmin: false,
         emailVerified: true
@@ -767,10 +786,6 @@ app.post('/resend-verification', async (req, res) => {
     pending.expiresAt =
         Date.now() + 10 * 60 * 1000;
     pending.lastSentAt = Date.now();
-
-    console.log(
-        `[RESEND CODE] ${pending.username}: ${code}`
-    );
 
     try {
         await sendVerificationEmail(
@@ -2401,7 +2416,7 @@ ${code}
                         username:
                             pending.username,
                         password:
-                            pending.password,
+                            hashPassword(pending.password),
                         email:
                             pending.email,
                         isAdmin: false,
