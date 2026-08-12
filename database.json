@@ -1,19 +1,4 @@
 {
-  "users": [
-    {
-      "username": "abusaud",
-      "password": "909_909",
-      "isAdmin": true
-    }
-  ],
-  "bots": [
-    {
-      "id": "1535393662920298597",
-      "name": "Welcome Bot",
-      "token": "MTQ3MTIwMDEwNTc3NTIzNTEyMg.GvqgCR._tO5euFVHCx_J07DQu0FDD4Gh_PlE988oW6ky8",
-      "script": "welcome",
-      "owner": "abusaud",
-      "status": "offline"
-    }
-  ]
+  "users":[{"username":"abusaud","password":"909_909","isAdmin":true}],
+  "bots":[]
 }
