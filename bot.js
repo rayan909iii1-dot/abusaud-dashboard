@@ -262,4 +262,14 @@ client.on('interactionCreate', async interaction => {
 });
 
 // ضع توكن البوت هنا أو في متغيرات البيئة
-client.login("MTUzNjYyNTg5MTYxNzI3NTkyNA.GKI_sc.-1uSs79lx1cxpLcj7eBCojUMwjzuRVRKbSHmpk");
+const token = process.env.DISCORD_TOKEN;
+
+if (!token) {
+    console.error('DISCORD_TOKEN is missing. Set it in your environment.');
+    process.exit(1);
+}
+
+client.login(token).catch(error => {
+    console.error('Discord login failed:', error.message);
+    process.exit(1);
+});
