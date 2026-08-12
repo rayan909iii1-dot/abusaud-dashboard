@@ -2,14 +2,13 @@ const {
     Client,
     GatewayIntentBits,
     Partials,
-    PermissionsBitField,
-    AuditLogEvent,
     EmbedBuilder,
-    Collection
-} = require("discord.js");
+    AuditLogEvent,
+    PermissionsBitField
+} = require('discord.js');
 
-const fs = require("fs");
-const path = require("path");
+const fs = require('fs');
+const path = require('path');
 
 /* =========================================================
    ENV
@@ -17,183 +16,137 @@ const path = require("path");
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
+const OWNER_ID = process.env.OWNER_ID;
 
 if (!BOT_TOKEN) {
-    console.error("❌ Error: Bot Token is missing!");
+    console.error('❌ Error: Bot Token is missing!');
     process.exit(1);
 }
 
 if (!CLIENT_ID) {
-    console.error("❌ Error: CLIENT_ID is missing!");
+    console.error('❌ Error: CLIENT_ID is missing!');
     process.exit(1);
 }
 
-/* =========================================================
-   SETTINGS
-========================================================= */
-
-const PREFIX = "!";
-
 /*
-    الأونر الأساسي للبوت
-    غيره إلى آيدي حسابك
+    المالك الأساسي للبوت.
+    إذا لم تضع OWNER_ID في Environment Variables
+    سيتم استخدام هذا الآيدي.
 */
-const OWNER_ID = "1113483140086907093";
+const MAIN_OWNER_ID = OWNER_ID || '1113483140086907093';
 
-/*
-    ملف مستقل لكل بوت
-*/
-const configPath = path.join(
-    __dirname,
-    `config_${CLIENT_ID}.json`
-);
+const PREFIX = '!';
 
 /* =========================================================
    CONFIG
 ========================================================= */
 
-function getDefaultConfig() {
+const configPath = path.join(
+    __dirname,
+    `config_${CLIENT_ID}.json`
+);
+
+function createDefaultConfig() {
     return {
-        ownerId: OWNER_ID,
-
-        adminId: "",
-
-        logChannelId: "",
-
-        whitelist: [
-            OWNER_ID
-        ],
-
-        protection: {
-
-            antiRaid: true,
-
-            antiSpam: true,
-
-            channelDelete: true,
-
-            roleDelete: true,
-
-            channelCreate: true,
-
-            roleCreate: true,
-
-            botProtection: true,
-
-            guildUpdate: true
-        },
-
-        allowedBots: [],
-
-        raid: {
-            joinLimit: 5,
-            timeWindow: 10000,
-            lockdownDuration: 60000
-        },
-
-        spam: {
-            messageLimit: 6,
-            timeWindow: 5000,
-            muteDuration: 10 * 60 * 1000
-        },
-
-        channelDelete: {
-            limit: 2,
-            timeWindow: 10000
-        },
-
-        roleDelete: {
-            limit: 2,
-            timeWindow: 10000
-        },
-
-        channelCreate: {
-            limit: 5,
-            timeWindow: 10000
-        },
-
-        roleCreate: {
-            limit: 5,
-            timeWindow: 10000
-        }
+        guilds: {}
     };
 }
 
-/* =========================================================
-   GET CONFIG
-========================================================= */
-
 function getConfig() {
-
-    try {
-
-        if (!fs.existsSync(configPath)) {
-
-            const defaultConfig = getDefaultConfig();
-
-            fs.writeFileSync(
-                configPath,
-                JSON.stringify(
-                    defaultConfig,
-                    null,
-                    2
-                )
-            );
-
-            return defaultConfig;
-        }
-
-        const data = JSON.parse(
-            fs.readFileSync(
-                configPath,
-                "utf8"
-            )
+    if (!fs.existsSync(configPath)) {
+        fs.writeFileSync(
+            configPath,
+            JSON.stringify(createDefaultConfig(), null, 2),
+            'utf8'
         );
-
-        return {
-            ...getDefaultConfig(),
-            ...data
-        };
-
-    } catch (error) {
-
-        console.error(
-            "❌ Config Error:",
-            error.message
-        );
-
-        return getDefaultConfig();
     }
-}
-
-/* =========================================================
-   SAVE CONFIG
-========================================================= */
-
-function saveConfig(data) {
 
     try {
+        return JSON.parse(
+            fs.readFileSync(configPath, 'utf8')
+        );
+    } catch (error) {
+        console.error('❌ Config Error:', error);
+
+        const freshConfig = createDefaultConfig();
 
         fs.writeFileSync(
             configPath,
-            JSON.stringify(
-                data,
-                null,
-                2
-            )
+            JSON.stringify(freshConfig, null, 2),
+            'utf8'
         );
 
-        return true;
-
-    } catch (error) {
-
-        console.error(
-            "❌ Config Save Error:",
-            error.message
-        );
-
-        return false;
+        return freshConfig;
     }
+}
+
+function saveConfig(data) {
+    fs.writeFileSync(
+        configPath,
+        JSON.stringify(data, null, 2),
+        'utf8'
+    );
+}
+
+/* =========================================================
+   GUILD CONFIG
+========================================================= */
+
+function getGuildConfig(guildId) {
+    const config = getConfig();
+
+    if (!config.guilds[guildId]) {
+        config.guilds[guildId] = {
+            ownerId: MAIN_OWNER_ID,
+
+            adminIds: [],
+
+            logChannelId: '',
+
+            allowedBots: [],
+
+            protection: {
+                antiRaid: true,
+                antiSpam: true,
+                botProtection: true,
+                channelDelete: true,
+                roleDelete: true
+            },
+
+            raid: {
+                joinLimit: 6,
+                timeWindow: 10000
+            },
+
+            spam: {
+                messageLimit: 6,
+                timeWindow: 5000,
+                muteDuration: 60000
+            },
+
+            channelDelete: {
+                limit: 3,
+                timeWindow: 10000
+            },
+
+            roleDelete: {
+                limit: 3,
+                timeWindow: 10000
+            }
+        };
+
+        saveConfig(config);
+    }
+
+    return config.guilds[guildId];
+}
+
+function saveGuildConfig(guildId, guildConfig) {
+    const config = getConfig();
+
+    config.guilds[guildId] = guildConfig;
+
+    saveConfig(config);
 }
 
 /* =========================================================
@@ -201,246 +154,196 @@ function saveConfig(data) {
 ========================================================= */
 
 const client = new Client({
-
     intents: [
-
         GatewayIntentBits.Guilds,
-
         GatewayIntentBits.GuildMembers,
-
+        GatewayIntentBits.GuildModeration,
         GatewayIntentBits.GuildMessages,
-
-        GatewayIntentBits.MessageContent,
-
-        GatewayIntentBits.GuildModeration
+        GatewayIntentBits.MessageContent
     ],
 
     partials: [
-
-        Partials.Channel,
-
         Partials.GuildMember,
-
-        Partials.Message
+        Partials.Message,
+        Partials.Channel
     ]
 });
 
 /* =========================================================
-   DATA
+   MEMORY
 ========================================================= */
-
-const spamMap = new Collection();
 
 const raidJoins = new Map();
 
-const protectionCounters = {
+const spamMap = new Map();
 
-    channelDelete: new Map(),
+const channelDeleteCounters = new Map();
 
-    roleDelete: new Map(),
-
-    channelCreate: new Map(),
-
-    roleCreate: new Map()
-};
+const roleDeleteCounters = new Map();
 
 const lockdownMap = new Map();
-
-/* =========================================================
-   READY
-========================================================= */
-
-client.once("ready", async () => {
-
-    console.log(
-        "===================================="
-    );
-
-    console.log(
-        `🛡️ Protection Bot Online`
-    );
-
-    console.log(
-        `Bot: ${client.user.tag}`
-    );
-
-    console.log(
-        `ID: ${client.user.id}`
-    );
-
-    console.log(
-        `Servers: ${client.guilds.cache.size}`
-    );
-
-    console.log(
-        "===================================="
-    );
-
-    client.user.setPresence({
-
-        activities: [
-
-            {
-                name: "Protection System",
-                type: 3
-            }
-
-        ],
-
-        status: "online"
-    });
-});
 
 /* =========================================================
    HELPERS
 ========================================================= */
 
-function isOwner(id) {
-
-    const config = getConfig();
-
-    return id === config.ownerId;
+function isOwner(member) {
+    return member && member.id === MAIN_OWNER_ID;
 }
 
-function isAdmin(id) {
+function isAdmin(member) {
+    if (!member) {
+        return false;
+    }
 
-    const config = getConfig();
-
-    return (
-
-        id === config.ownerId ||
-
-        (
-            config.adminId &&
-            id === config.adminId
-        )
-    );
-}
-
-function isWhitelisted(id) {
-
-    const config = getConfig();
-
-    if (!id) return false;
-
-    if (id === config.ownerId) {
+    if (member.id === MAIN_OWNER_ID) {
         return true;
     }
 
     if (
-        config.adminId &&
-        id === config.adminId
+        member.permissions &&
+        member.permissions.has(
+            PermissionsBitField.Flags.Administrator
+        )
     ) {
         return true;
     }
 
-    return config.whitelist.includes(id);
+    const config = getGuildConfig(
+        member.guild.id
+    );
+
+    return config.adminIds.includes(member.id);
 }
 
-function isAllowedBot(id) {
+function isConfiguredAdmin(member) {
+    if (!member) {
+        return false;
+    }
 
-    const config = getConfig();
+    if (member.id === MAIN_OWNER_ID) {
+        return true;
+    }
 
-    return config.allowedBots.includes(id);
+    const config = getGuildConfig(
+        member.guild.id
+    );
+
+    return config.adminIds.includes(member.id);
 }
 
-/* =========================================================
-   LOG CHANNEL
-========================================================= */
+function isWhitelisted(guild, userId) {
+    if (!userId) {
+        return false;
+    }
 
-function getLogChannel(guild) {
+    if (userId === MAIN_OWNER_ID) {
+        return true;
+    }
 
-    const config = getConfig();
+    const config = getGuildConfig(
+        guild.id
+    );
 
-    if (!config.logChannelId) {
+    return config.adminIds.includes(userId);
+}
+
+function isAllowedBot(guild, botId) {
+    const config = getGuildConfig(
+        guild.id
+    );
+
+    return config.allowedBots.includes(botId);
+}
+
+function getMemberFromMention(message, arg) {
+    if (!arg) {
         return null;
     }
 
-    return guild.channels.cache.get(
-        config.logChannelId
-    ) || null;
+    const match = arg.match(
+        /^<@!?(\d+)>$/
+    );
+
+    if (!match) {
+        return null;
+    }
+
+    return message.guild.members.cache.get(
+        match[1]
+    );
+}
+
+function getChannelFromMention(message, arg) {
+    if (!arg) {
+        return null;
+    }
+
+    const match = arg.match(
+        /^<#(\d+)>$/
+    );
+
+    if (!match) {
+        return null;
+    }
+
+    return message.guild.channels.cache.get(
+        match[1]
+    );
 }
 
 /* =========================================================
-   SEND LOG
+   LOG SYSTEM
 ========================================================= */
 
 async function sendLog(
     guild,
     title,
     description,
-    color = 0x3b82f6
+    color = '#3b82f6'
 ) {
-
     try {
+        const config = getGuildConfig(
+            guild.id
+        );
+
+        if (!config.logChannelId) {
+            return;
+        }
 
         const channel =
-            getLogChannel(guild);
+            guild.channels.cache.get(
+                config.logChannelId
+            );
 
-        if (!channel) return;
+        if (!channel) {
+            return;
+        }
 
-        const embed = new EmbedBuilder()
-
-            .setColor(color)
-
-            .setTitle(title)
-
-            .setDescription(description)
-
-            .setTimestamp()
-
-            .setFooter({
-                text: "Protection System"
-            });
+        const embed =
+            new EmbedBuilder()
+                .setColor(color)
+                .setTitle(title)
+                .setDescription(description)
+                .setFooter({
+                    text:
+                        `Protection • ${guild.name}`
+                })
+                .setTimestamp();
 
         await channel.send({
-
-            embeds: [
-                embed
-            ]
-
-        });
-
+            embeds: [embed]
+        }).catch(() => {});
     } catch (error) {
-
-        console.log(
-            "❌ Log Error:",
-            error.message
+        console.error(
+            '❌ Log Error:',
+            error
         );
     }
 }
 
 /* =========================================================
-   CLEAN COUNTER
-========================================================= */
-
-function cleanCounter(
-    map,
-    guildId,
-    timeWindow
-) {
-
-    const now = Date.now();
-
-    const data =
-        map.get(guildId) || [];
-
-    const filtered =
-        data.filter(
-            timestamp =>
-                now - timestamp <= timeWindow
-        );
-
-    map.set(
-        guildId,
-        filtered
-    );
-
-    return filtered;
-}
-
-/* =========================================================
-   GET AUDIT EXECUTOR
+   GET AUDIT LOG EXECUTOR
 ========================================================= */
 
 async function getExecutor(
@@ -448,37 +351,31 @@ async function getExecutor(
     type,
     targetId
 ) {
-
     try {
-
         const logs =
             await guild.fetchAuditLogs({
-
-                type: type,
-
-                limit: 10
+                type,
+                limit: 5
             });
 
         const entry =
-            logs.entries.find(entry => {
-
-                return (
-
-                    entry.target?.id === targetId &&
-
+            logs.entries.find(
+                item =>
+                    item.target &&
+                    item.target.id === targetId &&
                     Date.now() -
-                    entry.createdTimestamp <
-                    15000
-                );
-            });
+                        item.createdTimestamp <
+                        10000
+            );
 
-        return entry?.executor || null;
+        return entry
+            ? entry.executor
+            : null;
 
     } catch (error) {
-
-        console.log(
-            "Audit Log Error:",
-            error.message
+        console.error(
+            '❌ Audit Log Error:',
+            error
         );
 
         return null;
@@ -494,27 +391,9 @@ async function punish(
     userId,
     reason
 ) {
-
     try {
-
-        if (!userId) return;
-
-        if (isWhitelisted(userId)) {
-
-            await sendLog(
-
-                guild,
-
-                "🟡 Whitelisted Action",
-
-                `العضو: <@${userId}>\n` +
-                `السبب: ${reason}\n\n` +
-                `تم تجاهل الإجراء لأن العضو في قائمة الاستثناء.`,
-
-                0xf59e0b
-            );
-
-            return;
+        if (isWhitelisted(guild, userId)) {
+            return false;
         }
 
         const member =
@@ -522,605 +401,655 @@ async function punish(
                 .fetch(userId)
                 .catch(() => null);
 
-        if (!member) return;
+        if (!member) {
+            return false;
+        }
+
+        if (!member.manageable) {
+            await sendLog(
+                guild,
+                '⚠️ Protection Warning',
+                `لم أستطع معاقبة <@${userId}> بسبب ترتيب الرتب أو الصلاحيات.`,
+                '#f59e0b'
+            );
+
+            return false;
+        }
+
+        await member.kick(reason);
+
+        await sendLog(
+            guild,
+            '🔨 Protection Action',
+            `تم طرد <@${userId}>.\n\n**السبب:** ${reason}`,
+            '#ef4444'
+        );
+
+        return true;
+
+    } catch (error) {
+        console.error(
+            '❌ Punish Error:',
+            error
+        );
+
+        return false;
+    }
+}
+
+/* =========================================================
+   READY
+========================================================= */
+
+client.once(
+    'ready',
+    async () => {
+
+        console.log(
+            `✨ Protection Bot is online as ${client.user.tag} (ID: ${CLIENT_ID})`
+        );
+
+        console.log(
+            `🛡️ Protection System loaded.`
+        );
+
+        client.guilds.cache.forEach(
+            guild => {
+                getGuildConfig(
+                    guild.id
+                );
+            }
+        );
+
+        client.user.setPresence({
+            activities: [
+                {
+                    name:
+                        `${PREFIX}protectionhelp`,
+                    type: 0
+                }
+            ],
+            status: 'online'
+        });
+    }
+);
+
+/* =========================================================
+   COMMANDS
+========================================================= */
+
+client.on(
+    'messageCreate',
+    async message => {
 
         if (
-            member.permissions.has(
-                PermissionsBitField.Flags.Administrator
+            message.author.bot ||
+            !message.guild
+        ) {
+            return;
+        }
+
+        if (
+            !message.content.startsWith(
+                PREFIX
             )
         ) {
+            return;
+        }
+
+        const args =
+            message.content
+                .slice(PREFIX.length)
+                .trim()
+                .split(/\s+/);
+
+        const command =
+            args.shift()
+                .toLowerCase();
+
+        const config =
+            getGuildConfig(
+                message.guild.id
+            );
+
+        /* =====================================================
+           HELP
+        ===================================================== */
+
+        if (
+            command ===
+            'protectionhelp'
+        ) {
+
+            if (!isAdmin(message.member)) {
+                return message.reply(
+                    '❌ ليس لديك صلاحية استخدام أوامر الحماية.'
+                );
+            }
+
+            const embed =
+                new EmbedBuilder()
+                    .setColor('#3b82f6')
+                    .setTitle(
+                        '🛡️ Protection Commands'
+                    )
+                    .setDescription(
+                        [
+                            '**👑 الإدارة**',
+
+                            '`!setadmin @user`',
+                            'إضافة مسؤول جديد.',
+
+                            '`!removeadmin @user`',
+                            'إزالة مسؤول.',
+
+                            '`!admins`',
+                            'عرض جميع المسؤولين.',
+
+                            '**📋 Logs**',
+
+                            '`!setlog #channel`',
+                            'تعيين روم اللوق.',
+
+                            '**🤖 Bot Protection**',
+
+                            '`!allowbot @bot`',
+                            'السماح لبوت.',
+
+                            '`!removebot @bot`',
+                            'إزالة بوت من قائمة السماح.',
+
+                            '**🛡️ Protection**',
+
+                            '`!protection`',
+                            'عرض حالة الحماية.',
+
+                            '`!protectionhelp`',
+                            'عرض هذه القائمة.'
+                        ].join('\n\n')
+                    )
+                    .setFooter({
+                        text:
+                            'AbuSaud Protection'
+                    })
+                    .setTimestamp();
+
+            return message.reply({
+                embeds: [embed]
+            });
+        }
+
+        /* =====================================================
+           SET ADMIN
+        ===================================================== */
+
+        if (
+            command ===
+            'setadmin'
+        ) {
+
+            if (!isOwner(message.member)) {
+                return message.reply(
+                    '❌ هذا الأمر للمالك الأساسي للبوت فقط.'
+                );
+            }
+
+            const target =
+                getMemberFromMention(
+                    message,
+                    args[0]
+                );
+
+            if (!target) {
+                return message.reply(
+                    '❌ الاستخدام الصحيح:\n`!setadmin @user`'
+                );
+            }
+
+            if (
+                target.user.bot
+            ) {
+                return message.reply(
+                    '❌ لا يمكنك إضافة بوت كمسؤول.'
+                );
+            }
+
+            if (
+                target.id ===
+                MAIN_OWNER_ID
+            ) {
+                return message.reply(
+                    'ℹ️ هذا الشخص هو المالك الأساسي بالفعل.'
+                );
+            }
+
+            if (
+                config.adminIds.includes(
+                    target.id
+                )
+            ) {
+                return message.reply(
+                    '⚠️ هذا العضو مسؤول بالفعل.'
+                );
+            }
+
+            config.adminIds.push(
+                target.id
+            );
+
+            saveGuildConfig(
+                message.guild.id,
+                config
+            );
+
+            await message.reply(
+                `✅ تم إضافة ${target} كمسؤول للحماية.`
+            );
 
             await sendLog(
-
-                guild,
-
-                "⚠️ محاولة تخريب",
-
-                `العضو: <@${userId}>\n` +
-                `السبب: ${reason}\n\n` +
-                `لم يتم تنفيذ العقوبة بسبب امتلاكه Administrator.`,
-
-                0xf59e0b
+                message.guild,
+                '👑 New Protection Admin',
+                `تم إضافة ${target} كمسؤول بواسطة ${message.author}.`,
+                '#22c55e'
             );
 
             return;
         }
 
-        let punished = false;
+        /* =====================================================
+           REMOVE ADMIN
+        ===================================================== */
 
-        try {
+        if (
+            command ===
+            'removeadmin'
+        ) {
 
-            await member.kick(
-                `Protection Bot: ${reason}`
-            );
+            if (!isOwner(message.member)) {
+                return message.reply(
+                    '❌ هذا الأمر للمالك الأساسي للبوت فقط.'
+                );
+            }
 
-            punished = true;
-
-        } catch {
-
-            try {
-
-                await member.timeout(
-
-                    24 * 60 * 60 * 1000,
-
-                    `Protection Bot: ${reason}`
+            const target =
+                getMemberFromMention(
+                    message,
+                    args[0]
                 );
 
-                punished = true;
-
-            } catch {}
-        }
-
-        await sendLog(
-
-            guild,
-
-            punished
-                ? "🔴 تم اتخاذ إجراء أمني"
-                : "⚠️ فشل تنفيذ العقوبة",
-
-            `العضو: <@${userId}>\n` +
-            `السبب: **${reason}**`,
-
-            punished
-                ? 0xef4444
-                : 0xf59e0b
-        );
-
-    } catch (error) {
-
-        console.log(
-            "Punishment Error:",
-            error.message
-        );
-    }
-}
-
-/* =========================================================
-   OWNER COMMANDS
-========================================================= */
-
-client.on(
-    "messageCreate",
-    async message => {
-
-        try {
-
-            if (
-                message.author.bot ||
-                !message.guild
-            ) {
-                return;
+            if (!target) {
+                return message.reply(
+                    '❌ الاستخدام الصحيح:\n`!removeadmin @user`'
+                );
             }
 
             if (
-                !message.content.startsWith(
-                    PREFIX
+                target.id ===
+                MAIN_OWNER_ID
+            ) {
+                return message.reply(
+                    '❌ لا يمكن إزالة المالك الأساسي.'
+                );
+            }
+
+            if (
+                !config.adminIds.includes(
+                    target.id
                 )
             ) {
-                return;
+                return message.reply(
+                    '⚠️ هذا العضو ليس مسؤولًا.'
+                );
             }
 
-            const args =
-                message.content
-                    .slice(PREFIX.length)
-                    .trim()
-                    .split(/ +/);
-
-            const command =
-                args.shift()
-                    .toLowerCase();
-
-            const config =
-                getConfig();
-
-            /* =================================================
-               SET ADMIN
-            ================================================= */
-
-            if (
-                command === "setadmin"
-            ) {
-
-                if (
-                    message.author.id !==
-                    config.ownerId
-                ) {
-
-                    return message.reply(
-                        "❌ هذا الأمر للمالك فقط."
-                    );
-                }
-
-                const member =
-                    message.mentions.members
-                        .first();
-
-                if (!member) {
-
-                    return message.reply(
-                        "❌ الاستخدام:\n`!setadmin @الشخص`"
-                    );
-                }
-
-                config.adminId =
-                    member.id;
-
-                if (
-                    !config.whitelist.includes(
-                        member.id
-                    )
-                ) {
-
-                    config.whitelist.push(
-                        member.id
-                    );
-                }
-
-                saveConfig(config);
-
-                await message.reply(
-                    `✅ تم تحديد المسؤول.\n\n` +
-                    `👤 المسؤول: ${member}\n` +
-                    `🆔 ID: \`${member.id}\``
+            config.adminIds =
+                config.adminIds.filter(
+                    id =>
+                        id !== target.id
                 );
 
-                return;
-            }
-
-            /* =================================================
-               REMOVE ADMIN
-            ================================================= */
-
-            if (
-                command === "removeadmin"
-            ) {
-
-                if (
-                    message.author.id !==
-                    config.ownerId
-                ) {
-
-                    return message.reply(
-                        "❌ هذا الأمر للمالك فقط."
-                    );
-                }
-
-                const oldAdmin =
-                    config.adminId;
-
-                config.adminId = "";
-
-                config.whitelist =
-                    config.whitelist.filter(
-                        id =>
-                            id !== oldAdmin
-                    );
-
-                if (
-                    !config.whitelist.includes(
-                        config.ownerId
-                    )
-                ) {
-
-                    config.whitelist.push(
-                        config.ownerId
-                    );
-                }
-
-                saveConfig(config);
-
-                await message.reply(
-                    "✅ تم إزالة المسؤول."
-                );
-
-                return;
-            }
-
-            /* =================================================
-               SET LOG
-            ================================================= */
-
-            if (
-                command === "setlog"
-            ) {
-
-                if (
-                    message.author.id !==
-                    config.ownerId
-                ) {
-
-                    return message.reply(
-                        "❌ هذا الأمر للمالك فقط."
-                    );
-                }
-
-                const channel =
-                    message.mentions.channels
-                        .first();
-
-                if (!channel) {
-
-                    return message.reply(
-                        "❌ الاستخدام:\n`!setlog #روم-اللوق`"
-                    );
-                }
-
-                config.logChannelId =
-                    channel.id;
-
-                saveConfig(config);
-
-                await message.reply(
-                    `✅ تم تحديد روم اللوق:\n${channel}`
-                );
-
-                await sendLog(
-
-                    message.guild,
-
-                    "📋 Log Channel Updated",
-
-                    `تم تحديد ${channel} كروم لوق الحماية.`,
-
-                    0x22c55e
-                );
-
-                return;
-            }
-
-            /* =================================================
-               ADD BOT
-            ================================================= */
-
-            if (
-                command === "allowbot"
-            ) {
-
-                if (
-                    message.author.id !==
-                    config.ownerId
-                ) {
-
-                    return message.reply(
-                        "❌ هذا الأمر للمالك فقط."
-                    );
-                }
-
-                const bot =
-                    message.mentions.users
-                        .first();
-
-                if (
-                    !bot ||
-                    !bot.bot
-                ) {
-
-                    return message.reply(
-                        "❌ منشن البوت المطلوب."
-                    );
-                }
-
-                if (
-                    !config.allowedBots
-                        .includes(bot.id)
-                ) {
-
-                    config.allowedBots.push(
-                        bot.id
-                    );
-                }
-
-                saveConfig(config);
-
-                await message.reply(
-                    `✅ تم السماح للبوت:\n${bot}\n\n` +
-                    `🆔 \`${bot.id}\``
-                );
-
-                return;
-            }
-
-            /* =================================================
-               REMOVE BOT
-            ================================================= */
-
-            if (
-                command === "removebot"
-            ) {
-
-                if (
-                    message.author.id !==
-                    config.ownerId
-                ) {
-
-                    return message.reply(
-                        "❌ هذا الأمر للمالك فقط."
-                    );
-                }
-
-                const bot =
-                    message.mentions.users
-                        .first();
-
-                if (!bot) {
-
-                    return message.reply(
-                        "❌ منشن البوت."
-                    );
-                }
-
-                config.allowedBots =
-                    config.allowedBots.filter(
-                        id =>
-                            id !== bot.id
-                    );
-
-                saveConfig(config);
-
-                await message.reply(
-                    `✅ تم إزالة البوت من قائمة السماح:\n${bot}`
-                );
-
-                return;
-            }
-
-            /* =================================================
-               PROTECTION STATUS
-            ================================================= */
-
-            if (
-                command === "protection"
-            ) {
-
-                if (
-                    !isAdmin(
-                        message.author.id
-                    )
-                ) {
-
-                    return message.reply(
-                        "❌ ليس لديك صلاحية استخدام هذا الأمر."
-                    );
-                }
-
-                const admin =
-                    config.adminId
-                        ? `<@${config.adminId}>`
-                        : "غير محدد";
-
-                const log =
-                    config.logChannelId
-                        ? `<#${config.logChannelId}>`
-                        : "غير محدد";
-
-                const embed =
-                    new EmbedBuilder()
-
-                        .setColor(
-                            0x3b82f6
-                        )
-
-                        .setTitle(
-                            "🛡️ Protection System"
-                        )
-
-                        .addFields(
-
-                            {
-                                name:
-                                    "👑 Owner",
-
-                                value:
-                                    `<@${config.ownerId}>`,
-
-                                inline: true
-                            },
-
-                            {
-                                name:
-                                    "🛡️ Admin",
-
-                                value:
-                                    admin,
-
-                                inline: true
-                            },
-
-                            {
-                                name:
-                                    "📋 Logs",
-
-                                value:
-                                    log,
-
-                                inline: true
-                            },
-
-                            {
-                                name:
-                                    "🚨 Anti Raid",
-
-                                value:
-                                    config.protection
-                                        .antiRaid
-                                        ? "🟢 ON"
-                                        : "🔴 OFF",
-
-                                inline: true
-                            },
-
-                            {
-                                name:
-                                    "🚫 Anti Spam",
-
-                                value:
-                                    config.protection
-                                        .antiSpam
-                                        ? "🟢 ON"
-                                        : "🔴 OFF",
-
-                                inline: true
-                            },
-
-                            {
-                                name:
-                                    "🤖 Bot Protection",
-
-                                value:
-                                    config.protection
-                                        .botProtection
-                                        ? "🟢 ON"
-                                        : "🔴 OFF",
-
-                                inline: true
-                            },
-
-                            {
-                                name:
-                                    "🗑️ Channel Delete",
-
-                                value:
-                                    config.protection
-                                        .channelDelete
-                                        ? "🟢 ON"
-                                        : "🔴 OFF",
-
-                                inline: true
-                            },
-
-                            {
-                                name:
-                                    "🎭 Role Delete",
-
-                                value:
-                                    config.protection
-                                        .roleDelete
-                                        ? "🟢 ON"
-                                        : "🔴 OFF",
-
-                                inline: true
-                            }
-                        )
-
-                        .setTimestamp();
-
-                await message.reply({
-                    embeds: [
-                        embed
-                    ]
-                });
-
-                return;
-            }
-
-            /* =================================================
-               HELP
-            ================================================= */
-
-            if (
-                command === "protectionhelp"
-            ) {
-
-                if (
-                    !isAdmin(
-                        message.author.id
-                    )
-                ) {
-
-                    return message.reply(
-                        "❌ ليس لديك صلاحية."
-                    );
-                }
-
-                const embed =
-                    new EmbedBuilder()
-
-                        .setColor(
-                            0x3b82f6
-                        )
-
-                        .setTitle(
-                            "🛡️ Protection Commands"
-                        )
-
-                        .setDescription(
-
-                            [
-                                "`!setadmin @user`",
-                                "تحديد المسؤول",
-
-                                "`!removeadmin`",
-                                "إزالة المسؤول",
-
-                                "`!setlog #channel`",
-                                "تحديد روم اللوق",
-
-                                "`!allowbot @bot`",
-                                "السماح لبوت",
-
-                                "`!removebot @bot`",
-                                "إزالة بوت من السماح",
-
-                                "`!protection`",
-                                "عرض حالة الحماية",
-
-                                "`!protectionhelp`",
-                                "عرض المساعدة"
-                            ].join("\n\n")
-                        )
-
-                        .setFooter({
-                            text:
-                                "Protection System"
-                        });
-
-                await message.reply({
-                    embeds: [
-                        embed
-                    ]
-                });
-
-                return;
-            }
-
-        } catch (error) {
-
-            console.error(
-                "❌ Command Error:",
-                error
+            saveGuildConfig(
+                message.guild.id,
+                config
             );
+
+            await message.reply(
+                `✅ تم إزالة ${target} من مسؤولي الحماية.`
+            );
+
+            await sendLog(
+                message.guild,
+                '👤 Protection Admin Removed',
+                `تم إزالة ${target} من المسؤولين بواسطة ${message.author}.`,
+                '#f59e0b'
+            );
+
+            return;
+        }
+
+        /* =====================================================
+           ADMINS
+        ===================================================== */
+
+        if (
+            command ===
+            'admins'
+        ) {
+
+            if (!isAdmin(message.member)) {
+                return message.reply(
+                    '❌ ليس لديك صلاحية.'
+                );
+            }
+
+            const admins =
+                config.adminIds.length
+                    ? config.adminIds
+                        .map(
+                            id =>
+                                `<@${id}>`
+                        )
+                        .join('\n')
+                    : 'لا يوجد مسؤولون إضافيون.';
+
+            const embed =
+                new EmbedBuilder()
+                    .setColor('#3b82f6')
+                    .setTitle(
+                        '👑 Protection Administrators'
+                    )
+                    .addFields(
+                        {
+                            name:
+                                '👑 المالك الأساسي',
+                            value:
+                                `<@${MAIN_OWNER_ID}>`,
+                            inline: false
+                        },
+                        {
+                            name:
+                                '🛡️ المسؤولون',
+                            value:
+                                admins,
+                            inline: false
+                        }
+                    )
+                    .setTimestamp();
+
+            return message.reply({
+                embeds: [embed]
+            });
+        }
+
+        /* =====================================================
+           SET LOG
+        ===================================================== */
+
+        if (
+            command ===
+            'setlog'
+        ) {
+
+            if (!isAdmin(message.member)) {
+                return message.reply(
+                    '❌ ليس لديك صلاحية تعيين روم اللوق.'
+                );
+            }
+
+            const channel =
+                getChannelFromMention(
+                    message,
+                    args[0]
+                );
+
+            if (!channel) {
+                return message.reply(
+                    '❌ الاستخدام الصحيح:\n`!setlog #channel`'
+                );
+            }
+
+            if (
+                !channel.isTextBased()
+            ) {
+                return message.reply(
+                    '❌ يجب اختيار روم نصي.'
+                );
+            }
+
+            config.logChannelId =
+                channel.id;
+
+            saveGuildConfig(
+                message.guild.id,
+                config
+            );
+
+            await message.reply(
+                `✅ تم تعيين ${channel} كروم Logs.`
+            );
+
+            await sendLog(
+                message.guild,
+                '📋 Logs Enabled',
+                `تم تعيين هذه الروم بواسطة ${message.author}.`,
+                '#22c55e'
+            );
+
+            return;
+        }
+
+        /* =====================================================
+           ALLOW BOT
+        ===================================================== */
+
+        if (
+            command ===
+            'allowbot'
+        ) {
+
+            if (!isAdmin(message.member)) {
+                return message.reply(
+                    '❌ ليس لديك صلاحية.'
+                );
+            }
+
+            const botMember =
+                getMemberFromMention(
+                    message,
+                    args[0]
+                );
+
+            if (
+                !botMember ||
+                !botMember.user.bot
+            ) {
+                return message.reply(
+                    '❌ الاستخدام الصحيح:\n`!allowbot @bot`'
+                );
+            }
+
+            if (
+                config.allowedBots.includes(
+                    botMember.id
+                )
+            ) {
+                return message.reply(
+                    '⚠️ هذا البوت مسموح له بالفعل.'
+                );
+            }
+
+            config.allowedBots.push(
+                botMember.id
+            );
+
+            saveGuildConfig(
+                message.guild.id,
+                config
+            );
+
+            return message.reply(
+                `✅ تم السماح للبوت ${botMember}.`
+            );
+        }
+
+        /* =====================================================
+           REMOVE BOT
+        ===================================================== */
+
+        if (
+            command ===
+            'removebot'
+        ) {
+
+            if (!isAdmin(message.member)) {
+                return message.reply(
+                    '❌ ليس لديك صلاحية.'
+                );
+            }
+
+            const botMember =
+                getMemberFromMention(
+                    message,
+                    args[0]
+                );
+
+            if (
+                !botMember ||
+                !botMember.user.bot
+            ) {
+                return message.reply(
+                    '❌ الاستخدام الصحيح:\n`!removebot @bot`'
+                );
+            }
+
+            config.allowedBots =
+                config.allowedBots.filter(
+                    id =>
+                        id !== botMember.id
+                );
+
+            saveGuildConfig(
+                message.guild.id,
+                config
+            );
+
+            return message.reply(
+                `✅ تم إزالة ${botMember} من قائمة البوتات المسموحة.`
+            );
+        }
+
+        /* =====================================================
+           PROTECTION STATUS
+        ===================================================== */
+
+        if (
+            command ===
+            'protection'
+        ) {
+
+            if (!isAdmin(message.member)) {
+                return message.reply(
+                    '❌ ليس لديك صلاحية.'
+                );
+            }
+
+            const admins =
+                config.adminIds.length;
+
+            const log =
+                config.logChannelId
+                    ? `<#${config.logChannelId}>`
+                    : 'غير محدد';
+
+            const embed =
+                new EmbedBuilder()
+                    .setColor('#3b82f6')
+                    .setTitle(
+                        '🛡️ Protection System'
+                    )
+                    .addFields(
+                        {
+                            name:
+                                '👑 Owner',
+                            value:
+                                `<@${MAIN_OWNER_ID}>`,
+                            inline: true
+                        },
+                        {
+                            name:
+                                '🛡️ Admins',
+                            value:
+                                `${admins} مسؤول`,
+                            inline: true
+                        },
+                        {
+                            name:
+                                '📋 Logs',
+                            value:
+                                log,
+                            inline: true
+                        },
+                        {
+                            name:
+                                '🚨 Anti Raid',
+                            value:
+                                config.protection.antiRaid
+                                    ? '🟢 ON'
+                                    : '🔴 OFF',
+                            inline: true
+                        },
+                        {
+                            name:
+                                '🚫 Anti Spam',
+                            value:
+                                config.protection.antiSpam
+                                    ? '🟢 ON'
+                                    : '🔴 OFF',
+                            inline: true
+                        },
+                        {
+                            name:
+                                '🤖 Bot Protection',
+                            value:
+                                config.protection.botProtection
+                                    ? '🟢 ON'
+                                    : '🔴 OFF',
+                            inline: true
+                        },
+                        {
+                            name:
+                                '🗑️ Channel Delete',
+                            value:
+                                config.protection.channelDelete
+                                    ? '🟢 ON'
+                                    : '🔴 OFF',
+                            inline: true
+                        },
+                        {
+                            name:
+                                '🎭 Role Delete',
+                            value:
+                                config.protection.roleDelete
+                                    ? '🟢 ON'
+                                    : '🔴 OFF',
+                            inline: true
+                        }
+                    )
+                    .setTimestamp();
+
+            return message.reply({
+                embeds: [embed]
+            });
         }
     }
 );
 
 /* =========================================================
-   ANTI RAID
+   BOT PROTECTION + ANTI RAID
 ========================================================= */
 
 client.on(
-    "guildMemberAdd",
+    'guildMemberAdd',
     async member => {
 
         try {
@@ -1129,7 +1058,9 @@ client.on(
                 member.guild;
 
             const config =
-                getConfig();
+                getGuildConfig(
+                    guild.id
+                );
 
             /* =================================================
                BOT PROTECTION
@@ -1137,12 +1068,12 @@ client.on(
 
             if (
                 member.user.bot &&
-                config.protection
-                    .botProtection
+                config.protection.botProtection
             ) {
 
                 if (
                     isAllowedBot(
+                        guild,
                         member.id
                     )
                 ) {
@@ -1151,32 +1082,36 @@ client.on(
 
                 const executor =
                     await getExecutor(
-
                         guild,
-
                         AuditLogEvent.BotAdd,
-
                         member.id
                     );
 
                 if (
                     executor &&
                     !isWhitelisted(
+                        guild,
                         executor.id
                     )
                 ) {
 
-                    await member.kick(
-                        "Protection Bot: Unauthorized Bot"
-                    ).catch(() => {});
+                    await member
+                        .kick(
+                            'Protection Bot: Unauthorized Bot'
+                        )
+                        .catch(() => {});
+
+                    await sendLog(
+                        guild,
+                        '🤖 Unauthorized Bot',
+                        `تمت محاولة إضافة بوت غير مصرح به.\n\n**البوت:** ${member.user.tag}\n**بواسطة:** <@${executor.id}>`,
+                        '#ef4444'
+                    );
 
                     await punish(
-
                         guild,
-
                         executor.id,
-
-                        `إضافة بوت غير مصرح به: ${member.user.tag}`
+                        'إضافة بوت غير مصرح به'
                     );
                 }
 
@@ -1188,8 +1123,7 @@ client.on(
             ================================================= */
 
             if (
-                !config.protection
-                    .antiRaid
+                !config.protection.antiRaid
             ) {
                 return;
             }
@@ -1233,47 +1167,34 @@ client.on(
                     );
 
                     await sendLog(
-
                         guild,
-
-                        "🚨 Anti-Raid Activated",
-
+                        '🚨 Anti-Raid Activated',
                         `تم اكتشاف دخول **${joins.length}** أعضاء خلال فترة قصيرة.\n\nتم تفعيل وضع الحماية.`,
-
-                        0xef4444
+                        '#ef4444'
                     );
 
                     try {
 
                         await guild.setVerificationLevel(
-
                             4,
-
-                            "Protection Bot: Anti-Raid"
+                            'Protection Bot: Anti-Raid'
                         );
 
                     } catch (error) {
 
                         console.log(
-                            "Verification Error:",
+                            '❌ Verification Error:',
                             error.message
                         );
                     }
 
+                    /*
+                        بعد دقيقة نلغي الـLockdown
+                        إذا هدأ السيرفر.
+                    */
+
                     setTimeout(
-                        async () => {
-
-                            try {
-
-                                await guild.setVerificationLevel(
-
-                                    1,
-
-                                    "Protection Bot: Raid Protection Ended"
-                                );
-
-                            } catch {}
-
+                        () => {
                             lockdownMap.delete(
                                 guild.id
                             );
@@ -1281,22 +1202,8 @@ client.on(
                             raidJoins.delete(
                                 guild.id
                             );
-
-                            await sendLog(
-
-                                guild,
-
-                                "🟢 Anti-Raid Deactivated",
-
-                                "انتهت فترة الحماية وعاد السيرفر للوضع الطبيعي.",
-
-                                0x22c55e
-                            );
-
                         },
-
-                        config.raid
-                            .lockdownDuration
+                        60000
                     );
                 }
             }
@@ -1304,7 +1211,7 @@ client.on(
         } catch (error) {
 
             console.error(
-                "❌ Anti-Raid Error:",
+                '❌ guildMemberAdd Error:',
                 error
             );
         }
@@ -1316,66 +1223,67 @@ client.on(
 ========================================================= */
 
 client.on(
-    "messageCreate",
+    'messageCreate',
     async message => {
 
         try {
 
             if (
-                !message.guild ||
-                message.author.bot
+                message.author.bot ||
+                !message.guild
             ) {
                 return;
             }
 
             const config =
-                getConfig();
+                getGuildConfig(
+                    message.guild.id
+                );
 
             if (
-                !config.protection
-                    .antiSpam
+                !config.protection.antiSpam
             ) {
                 return;
             }
 
             if (
                 isWhitelisted(
+                    message.guild,
                     message.author.id
                 )
             ) {
                 return;
             }
 
+            const key =
+                `${message.guild.id}:${message.author.id}`;
+
             const now =
                 Date.now();
 
-            let data =
-                spamMap.get(
-                    message.author.id
-                ) || [];
+            let messages =
+                spamMap.get(key) || [];
 
-            data.push(now);
+            messages.push(now);
 
-            data =
-                data.filter(
+            messages =
+                messages.filter(
                     timestamp =>
                         now - timestamp <=
                         config.spam.timeWindow
                 );
 
             spamMap.set(
-                message.author.id,
-                data
+                key,
+                messages
             );
 
             if (
-                data.length >=
+                messages.length >=
                 config.spam.messageLimit
             ) {
 
-                spamMap.delete(
-                    message.author.id
-                );
+                spamMap.delete(key);
 
                 await message.delete()
                     .catch(() => {});
@@ -1386,32 +1294,24 @@ client.on(
 
                     await message.member
                         .timeout(
-
-                            config.spam
-                                .muteDuration,
-
-                            "Protection Bot: Anti-Spam"
-
+                            config.spam.muteDuration,
+                            'Protection Bot: Anti-Spam'
                         )
                         .catch(() => {});
                 }
 
                 await sendLog(
-
                     message.guild,
-
-                    "🚫 Anti-Spam",
-
+                    '🚫 Anti-Spam',
                     `تم اكتشاف Spam من <@${message.author.id}>.\n\nتم اتخاذ إجراء تلقائي.`,
-
-                    0xef4444
+                    '#ef4444'
                 );
             }
 
         } catch (error) {
 
             console.error(
-                "❌ Anti-Spam Error:",
+                '❌ Anti-Spam Error:',
                 error
             );
         }
@@ -1419,11 +1319,11 @@ client.on(
 );
 
 /* =========================================================
-   CHANNEL DELETE
+   CHANNEL DELETE PROTECTION
 ========================================================= */
 
 client.on(
-    "channelDelete",
+    'channelDelete',
     async channel => {
 
         try {
@@ -1436,22 +1336,20 @@ client.on(
                 channel.guild;
 
             const config =
-                getConfig();
+                getGuildConfig(
+                    guild.id
+                );
 
             if (
-                !config.protection
-                    .channelDelete
+                !config.protection.channelDelete
             ) {
                 return;
             }
 
             const executor =
                 await getExecutor(
-
                     guild,
-
                     AuditLogEvent.ChannelDelete,
-
                     channel.id
                 );
 
@@ -1461,6 +1359,7 @@ client.on(
 
             if (
                 isWhitelisted(
+                    guild,
                     executor.id
                 )
             ) {
@@ -1471,11 +1370,9 @@ client.on(
                 Date.now();
 
             let data =
-                protectionCounters
-                    .channelDelete
-                    .get(
-                        guild.id
-                    ) || [];
+                channelDeleteCounters.get(
+                    guild.id
+                ) || [];
 
             data.push(now);
 
@@ -1483,61 +1380,44 @@ client.on(
                 data.filter(
                     timestamp =>
                         now - timestamp <=
-                        config.channelDelete
-                            .timeWindow
+                        config.channelDelete.timeWindow
                 );
 
-            protectionCounters
-                .channelDelete
-                .set(
-                    guild.id,
-                    data
-                );
+            channelDeleteCounters.set(
+                guild.id,
+                data
+            );
 
             await punish(
-
                 guild,
-
                 executor.id,
-
                 `حذف روم: ${channel.name}`
             );
 
             await sendLog(
-
                 guild,
-
-                "🗑️ Channel Deleted",
-
-                `تم حذف الروم:\n` +
-                `**${channel.name}**\n\n` +
-                `بواسطة: <@${executor.id}>`,
-
-                0xef4444
+                '🗑️ Channel Deleted',
+                `تم حذف الروم:\n**${channel.name}**\n\nبواسطة: <@${executor.id}>`,
+                '#ef4444'
             );
 
             if (
                 data.length >=
-                config.channelDelete
-                    .limit
+                config.channelDelete.limit
             ) {
 
                 await sendLog(
-
                     guild,
-
-                    "🚨 Channel Protection",
-
+                    '🚨 Channel Protection',
                     `تم اكتشاف حذف عدة رومات بواسطة <@${executor.id}>.`,
-
-                    0xef4444
+                    '#ef4444'
                 );
             }
 
         } catch (error) {
 
             console.error(
-                "❌ Channel Delete Error:",
+                '❌ Channel Delete Error:',
                 error
             );
         }
@@ -1545,11 +1425,11 @@ client.on(
 );
 
 /* =========================================================
-   ROLE DELETE
+   ROLE DELETE PROTECTION
 ========================================================= */
 
 client.on(
-    "roleDelete",
+    'roleDelete',
     async role => {
 
         try {
@@ -1558,22 +1438,20 @@ client.on(
                 role.guild;
 
             const config =
-                getConfig();
+                getGuildConfig(
+                    guild.id
+                );
 
             if (
-                !config.protection
-                    .roleDelete
+                !config.protection.roleDelete
             ) {
                 return;
             }
 
             const executor =
                 await getExecutor(
-
                     guild,
-
                     AuditLogEvent.RoleDelete,
-
                     role.id
                 );
 
@@ -1583,6 +1461,7 @@ client.on(
 
             if (
                 isWhitelisted(
+                    guild,
                     executor.id
                 )
             ) {
@@ -1593,11 +1472,9 @@ client.on(
                 Date.now();
 
             let data =
-                protectionCounters
-                    .roleDelete
-                    .get(
-                        guild.id
-                    ) || [];
+                roleDeleteCounters.get(
+                    guild.id
+                ) || [];
 
             data.push(now);
 
@@ -1605,160 +1482,44 @@ client.on(
                 data.filter(
                     timestamp =>
                         now - timestamp <=
-                        config.roleDelete
-                            .timeWindow
+                        config.roleDelete.timeWindow
                 );
 
-            protectionCounters
-                .roleDelete
-                .set(
-                    guild.id,
-                    data
-                );
+            roleDeleteCounters.set(
+                guild.id,
+                data
+            );
 
             await punish(
-
                 guild,
-
                 executor.id,
-
                 `حذف رتبة: ${role.name}`
             );
 
             await sendLog(
-
                 guild,
-
-                "🎭 Role Deleted",
-
-                `تم حذف الرتبة:\n` +
-                `**${role.name}**\n\n` +
-                `بواسطة: <@${executor.id}>`,
-
-                0xef4444
+                '🎭 Role Deleted',
+                `تم حذف الرتبة:\n**${role.name}**\n\nبواسطة: <@${executor.id}>`,
+                '#ef4444'
             );
-
-        } catch (error) {
-
-            console.error(
-                "❌ Role Delete Error:",
-                error
-            );
-        }
-    }
-);
-
-/* =========================================================
-   CHANNEL CREATE
-========================================================= */
-
-client.on(
-    "channelCreate",
-    async channel => {
-
-        try {
-
-            if (!channel.guild) {
-                return;
-            }
-
-            const guild =
-                channel.guild;
-
-            const config =
-                getConfig();
-
-            if (
-                !config.protection
-                    .channelCreate
-            ) {
-                return;
-            }
-
-            const executor =
-                await getExecutor(
-
-                    guild,
-
-                    AuditLogEvent.ChannelCreate,
-
-                    channel.id
-                );
-
-            if (!executor) {
-                return;
-            }
-
-            if (
-                isWhitelisted(
-                    executor.id
-                )
-            ) {
-                return;
-            }
-
-            const now =
-                Date.now();
-
-            let data =
-                protectionCounters
-                    .channelCreate
-                    .get(
-                        guild.id
-                    ) || [];
-
-            data.push(now);
-
-            data =
-                data.filter(
-                    timestamp =>
-                        now - timestamp <=
-                        config.channelCreate
-                            .timeWindow
-                );
-
-            protectionCounters
-                .channelCreate
-                .set(
-                    guild.id,
-                    data
-                );
 
             if (
                 data.length >=
-                config.channelCreate
-                    .limit
+                config.roleDelete.limit
             ) {
 
-                await channel.delete(
-                    "Protection Bot: Excessive Channel Creation"
-                ).catch(() => {});
-
-                await punish(
-
-                    guild,
-
-                    executor.id,
-
-                    "إنشاء عدد كبير من الرومات"
-                );
-
                 await sendLog(
-
                     guild,
-
-                    "🚨 Channel Creation Protection",
-
-                    `تم اكتشاف إنشاء عدد كبير من الرومات بواسطة <@${executor.id}>.`,
-
-                    0xef4444
+                    '🚨 Role Protection',
+                    `تم اكتشاف حذف عدة رتب بواسطة <@${executor.id}>.`,
+                    '#ef4444'
                 );
             }
 
         } catch (error) {
 
             console.error(
-                "❌ Channel Create Error:",
+                '❌ Role Delete Error:',
                 error
             );
         }
@@ -1766,238 +1527,64 @@ client.on(
 );
 
 /* =========================================================
-   ROLE CREATE
+   CLEANUP
 ========================================================= */
 
-client.on(
-    "roleCreate",
-    async role => {
+setInterval(
+    () => {
 
-        try {
+        const now =
+            Date.now();
 
-            const guild =
-                role.guild;
+        for (
+            const [
+                key,
+                timestamps
+            ] of spamMap
+        ) {
 
-            const config =
-                getConfig();
-
-            if (
-                !config.protection
-                    .roleCreate
-            ) {
-                return;
-            }
-
-            const executor =
-                await getExecutor(
-
-                    guild,
-
-                    AuditLogEvent.RoleCreate,
-
-                    role.id
-                );
-
-            if (!executor) {
-                return;
-            }
-
-            if (
-                isWhitelisted(
-                    executor.id
-                )
-            ) {
-                return;
-            }
-
-            const now =
-                Date.now();
-
-            let data =
-                protectionCounters
-                    .roleCreate
-                    .get(
-                        guild.id
-                    ) || [];
-
-            data.push(now);
-
-            data =
-                data.filter(
+            const filtered =
+                timestamps.filter(
                     timestamp =>
                         now - timestamp <=
-                        config.roleCreate
-                            .timeWindow
-                );
-
-            protectionCounters
-                .roleCreate
-                .set(
-                    guild.id,
-                    data
+                        10000
                 );
 
             if (
-                data.length >=
-                config.roleCreate
-                    .limit
+                filtered.length === 0
             ) {
-
-                await role.delete(
-                    "Protection Bot: Excessive Role Creation"
-                ).catch(() => {});
-
-                await punish(
-
-                    guild,
-
-                    executor.id,
-
-                    "إنشاء عدد كبير من الرتب"
-                );
-
-                await sendLog(
-
-                    guild,
-
-                    "🚨 Role Creation Protection",
-
-                    `تم اكتشاف إنشاء عدد كبير من الرتب بواسطة <@${executor.id}>.`,
-
-                    0xef4444
+                spamMap.delete(key);
+            } else {
+                spamMap.set(
+                    key,
+                    filtered
                 );
             }
-
-        } catch (error) {
-
-            console.error(
-                "❌ Role Create Error:",
-                error
-            );
         }
-    }
+
+    },
+    30000
 );
 
 /* =========================================================
-   GUILD UPDATE
+   ERROR HANDLING
 ========================================================= */
 
 client.on(
-    "guildUpdate",
-    async (oldGuild, newGuild) => {
-
-        try {
-
-            const config =
-                getConfig();
-
-            if (
-                !config.protection
-                    .guildUpdate
-            ) {
-                return;
-            }
-
-            const changes = [];
-
-            if (
-                oldGuild.name !==
-                newGuild.name
-            ) {
-
-                changes.push(
-                    "تغيير اسم السيرفر"
-                );
-            }
-
-            if (
-                oldGuild.icon !==
-                newGuild.icon
-            ) {
-
-                changes.push(
-                    "تغيير صورة السيرفر"
-                );
-            }
-
-            if (!changes.length) {
-                return;
-            }
-
-            const executor =
-                await getExecutor(
-
-                    newGuild,
-
-                    AuditLogEvent.GuildUpdate,
-
-                    newGuild.id
-                );
-
-            if (!executor) {
-                return;
-            }
-
-            if (
-                isWhitelisted(
-                    executor.id
-                )
-            ) {
-                return;
-            }
-
-            await punish(
-
-                newGuild,
-
-                executor.id,
-
-                changes.join(" + ")
-            );
-
-            await sendLog(
-
-                newGuild,
-
-                "🏠 Server Protection",
-
-                `تم اكتشاف تعديل على السيرفر بواسطة <@${executor.id}>.\n\n` +
-                changes.join("\n"),
-
-                0xef4444
-            );
-
-        } catch (error) {
-
-            console.error(
-                "❌ Guild Update Error:",
-                error
-            );
-        }
-    }
-);
-
-/* =========================================================
-   ERRORS
-========================================================= */
-
-process.on(
-    "unhandledRejection",
+    'error',
     error => {
-
         console.error(
-            "❌ Unhandled Rejection:",
+            '❌ Discord Client Error:',
             error
         );
     }
 );
 
 process.on(
-    "uncaughtException",
+    'unhandledRejection',
     error => {
-
         console.error(
-            "❌ Uncaught Exception:",
+            '❌ Unhandled Rejection:',
             error
         );
     }
@@ -2007,4 +1594,6 @@ process.on(
    LOGIN
 ========================================================= */
 
-client.login(BOT_TOKEN);
+client.login(
+    BOT_TOKEN
+);
